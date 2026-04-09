@@ -43,7 +43,7 @@ cpu.cpu_core,
 cpu.cpu_hyper_thread,
 cpu.graphic_card,
 
-GROUP_CONCAT(DISTINCT ram.ram_size ORDER BY ram.ram_size)                        AS ram,
+MAX(ram_agg.ram)                                                                 AS ram,
 GROUP_CONCAT(DISTINCT storage.hdd_model ORDER BY storage.hdd_model)              AS hdd_model,
 GROUP_CONCAT(DISTINCT storage.hdd_capacity ORDER BY storage.hdd_model)           AS hdd_capacity,
 GROUP_CONCAT(DISTINCT storage.hdd_serial ORDER BY storage.hdd_model)             AS hdd_serial,
@@ -56,7 +56,11 @@ FROM users
 INNER JOIN assets ON assets.user_id = users.user_id
     AND assets.asset_type IN ('Desktop','Laptop','iPad','Phone')
 LEFT JOIN cpu      ON cpu.asset_id      = assets.asset_id
-LEFT JOIN ram      ON ram.asset_id      = assets.asset_id
+LEFT JOIN (
+    SELECT asset_id, GROUP_CONCAT(ram_size SEPARATOR '||') AS ram
+    FROM ram
+    GROUP BY asset_id
+) ram_agg  ON ram_agg.asset_id   = assets.asset_id
 LEFT JOIN storage  ON storage.asset_id  = assets.asset_id
 LEFT JOIN monitor  ON monitor.asset_id  = assets.asset_id
 LEFT JOIN software ON software.asset_id = assets.asset_id
@@ -279,7 +283,7 @@ foreach($users as $uid => $user):
         $atype = $asset['asset_type'];
 
         /* RAM */
-        $ram_arr = !empty($asset['ram']) ? explode(",", $asset['ram']) : [];
+$ram_arr = !empty($asset['ram']) ? explode("||", $asset['ram']) : [];
         $total = 0; $ramText = ""; $slots = 0;
         foreach($ram_arr as $r){
             $val = intval($r);

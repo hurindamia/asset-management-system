@@ -51,6 +51,23 @@ FROM assets
 ");
 
 $deviceStats = mysqli_fetch_assoc($deviceDistResult);
+
+$assignedUsers = intval($deviceStats['total_users'] ?? 0);
+$totalTrackedDevices = intval($deviceStats['total_devices'] ?? 0);
+$coveragePct = $totalUsers > 0 ? round(($assignedUsers / $totalUsers) * 100) : 0;
+$avgDevicesPerUser = $assignedUsers > 0 ? round($totalTrackedDevices / $assignedUsers, 1) : 0;
+$recentCount = count($recentAssets);
+$topUserName = $topUsers[0]['name'] ?? 'No assignments yet';
+$topUserTotal = intval($topUsers[0]['total'] ?? 0);
+
+$leadingType = 'No devices yet';
+$leadingTypeCount = 0;
+foreach($typeCounts as $type => $count){
+    if($count > $leadingTypeCount){
+        $leadingType = $type;
+        $leadingTypeCount = $count;
+    }
+}
 ?>
 
 <style>
@@ -330,13 +347,443 @@ $deviceStats = mysqli_fetch_assoc($deviceDistResult);
 .stat-card:nth-child(4){ animation-delay: 0.20s; }
 .stat-card:nth-child(5){ animation-delay: 0.25s; }
 .stat-card:nth-child(6){ animation-delay: 0.30s; }
+
+/* Dashboard refresh */
+.dashboard-shell{
+    position:relative;
+    overflow:hidden;
+    background:
+        radial-gradient(circle at top right, rgba(18,62,107,0.12), transparent 30%),
+        radial-gradient(circle at left center, rgba(4,106,117,0.08), transparent 24%),
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,247,252,0.98));
+    border:1px solid rgba(11,42,74,0.08);
+    box-shadow:0 24px 48px rgba(11,42,74,0.12);
+    padding:28px;
+}
+
+.dashboard-shell::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(90deg, rgba(255,255,255,0.30), rgba(255,255,255,0));
+    pointer-events:none;
+}
+
+.dashboard-shell > *{
+    position:relative;
+    z-index:1;
+}
+
+.dashboard-hero{
+    display:grid;
+    grid-template-columns:minmax(0,1.5fr) minmax(280px,0.9fr);
+    gap:20px;
+    margin-bottom:24px;
+}
+
+.hero-main{
+    padding:28px;
+    border-radius:22px;
+    background:linear-gradient(140deg, rgba(11,42,74,0.98), rgba(18,62,107,0.92));
+    color:#fff;
+    box-shadow:0 18px 34px rgba(11,42,74,0.22);
+}
+
+.hero-kicker{
+    display:inline-flex;
+    align-items:center;
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.10);
+    color:rgba(255,255,255,0.82);
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    font-size:0.72rem;
+    font-weight:700;
+}
+
+.dashboard-title{
+    text-align:left;
+    color:#fff;
+    margin:14px 0 0;
+}
+
+.dashboard-title::after{
+    margin:12px 0 0;
+    background:rgba(255,255,255,0.85);
+}
+
+.hero-main .dash-greeting{
+    margin:16px 0 0;
+}
+
+.hero-main .dash-greeting p{
+    color:rgba(255,255,255,0.76);
+    font-size:1rem;
+    line-height:1.7;
+}
+
+.hero-pill-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-top:24px;
+}
+
+.hero-pill{
+    min-width:150px;
+    padding:14px 16px;
+    border-radius:16px;
+    background:rgba(255,255,255,0.10);
+}
+
+.hero-pill span{
+    display:block;
+    color:rgba(255,255,255,0.70);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    font-size:0.72rem;
+    margin-bottom:6px;
+}
+
+.hero-pill strong{
+    font-size:1.2rem;
+    font-weight:800;
+}
+
+.hero-side{
+    display:grid;
+    gap:14px;
+}
+
+.hero-side-card{
+    padding:18px;
+    border-radius:20px;
+    background:linear-gradient(180deg, #ffffff, #eef5fb);
+    border:1px solid rgba(11,42,74,0.08);
+    box-shadow:0 12px 24px rgba(11,42,74,0.08);
+}
+
+.hero-side-card span{
+    display:block;
+    color:#6c8196;
+    text-transform:uppercase;
+    letter-spacing:0.10em;
+    font-size:0.72rem;
+    margin-bottom:8px;
+    font-weight:700;
+}
+
+.hero-side-card strong{
+    display:block;
+    color:#0b2a4a;
+    font-size:1.2rem;
+    margin-bottom:6px;
+}
+
+.hero-side-card p{
+    margin:0;
+    color:#5f7488;
+    line-height:1.5;
+}
+
+.stat-grid{
+    grid-template-columns:repeat(6, minmax(0, 1fr));
+    gap:16px;
+}
+
+.stat-card,
+.chart-card,
+.recent-card,
+.quicklinks-card{
+    border:1px solid rgba(11,42,74,0.08);
+    box-shadow:0 16px 30px rgba(11,42,74,0.08);
+}
+
+.stat-card{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(180deg, #f4f9ff, #e7f0fb);
+    border-radius:18px;
+    padding:22px 18px;
+    text-align:left;
+    border:1px solid rgba(120,156,196,0.25);
+    box-shadow:0 10px 22px rgba(84,124,166,0.12);
+    transition:transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.stat-card::after{
+    content:none;
+}
+
+.stat-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 16px 28px rgba(84,124,166,0.18);
+    background:linear-gradient(180deg, #f8fbff, #eaf3fd);
+}
+
+.stat-icon{
+    width:46px;
+    height:46px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(183, 206, 229, 0.42);
+    margin:0 0 14px;
+}
+
+.stat-card.users{
+    background:linear-gradient(180deg, #f4f9ff, #e5eefb);
+    border-top-color:#7ea5d3;
+}
+
+.stat-card.assets{
+    background:linear-gradient(180deg, #f3f8ff, #e6f1fb);
+    border-top-color:#8fb4dd;
+}
+
+.stat-card.desktop{
+    background:linear-gradient(180deg, #f2f8fd, #e3eef7);
+    border-top-color:#7da0c4;
+}
+
+.stat-card.laptop{
+    background:linear-gradient(180deg, #f4f9ff, #e2edf9);
+    border-top-color:#6f97c5;
+}
+
+.stat-card.ipad{
+    background:linear-gradient(180deg, #f5f9ff, #e8f1fb);
+    border-top-color:#9db2dc;
+}
+
+.stat-card.phone{
+    background:linear-gradient(180deg, #f3f8ff, #e4eef8);
+    border-top-color:#84a7cf;
+}
+
+.stat-number{
+    font-size:2.15rem;
+    margin-bottom:8px;
+}
+
+.stat-label{
+    font-size:0.76rem;
+    letter-spacing:0.12em;
+    color:#70859a;
+}
+
+.quicklinks-card,
+.chart-card,
+.recent-card{
+    border-radius:22px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(243,248,252,0.98));
+    padding:22px;
+}
+
+.quicklinks-card h3,
+.chart-card h3,
+.recent-card h3{
+    color:#0b2a4a;
+    font-size:0.86rem;
+    letter-spacing:0.12em;
+    margin-bottom:18px;
+}
+
+.quicklink-btn{
+    border-radius:16px;
+    padding:22px 14px;
+    border:1px solid rgba(11,42,74,0.06);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.charts-row{
+    align-items:stretch;
+    gap:18px;
+}
+
+.bottom-row{
+    grid-template-columns:1fr;
+}
+
+.chart-wrap{
+    position:relative;
+    min-height:220px;
+}
+
+.donut-center{
+    position:absolute;
+    inset:50% auto auto 50%;
+    transform:translate(-50%, -50%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    pointer-events:none;
+}
+
+.donut-center strong{
+    color:#0b2a4a;
+    font-size:1.85rem;
+    line-height:1;
+}
+
+.donut-center span{
+    margin-top:6px;
+    color:#70859a;
+    font-size:0.74rem;
+    text-transform:uppercase;
+    letter-spacing:0.10em;
+}
+
+.device-legend{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+    margin-top:18px;
+}
+
+.legend-pill{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:10px 12px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.76);
+    border:1px solid rgba(11,42,74,0.06);
+    color:#53697c;
+    font-size:0.86rem;
+    font-weight:700;
+}
+
+.legend-pill strong{
+    color:#0b2a4a;
+}
+
+.bar-track{
+    height:10px;
+    background:#e4edf6;
+}
+
+.overview-stack{
+    display:grid;
+    gap:12px;
+}
+
+.overview-box{
+    padding:14px 16px;
+    border-radius:16px;
+    background:#f4f8fc;
+    border:1px solid rgba(11,42,74,0.06);
+}
+
+.overview-box strong{
+    display:block;
+    color:#0b2a4a;
+    font-size:1.5rem;
+    margin-top:4px;
+}
+
+.overview-box span{
+    color:#607487;
+    font-size:0.78rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    font-weight:700;
+}
+
+.recent-item{
+    border:1px solid rgba(11,42,74,0.06);
+    border-radius:16px;
+    padding:12px;
+}
+
+.recent-badge{
+    width:44px;
+    height:44px;
+    border-radius:14px;
+}
+
+.recent-info strong{
+    color:#0b2a4a;
+    font-size:0.92rem;
+}
+
+.recent-info span{
+    color:#5f7488;
+    font-size:0.82rem;
+}
+
+@media(max-width: 1250px){
+    .stat-grid{
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media(max-width: 980px){
+    .dashboard-hero,
+    .charts-row,
+    .bottom-row{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width: 680px){
+    .dashboard-shell{
+        padding:20px;
+    }
+
+    .stat-grid,
+    .quicklink-grid,
+    .device-legend{
+        grid-template-columns:1fr;
+    }
+}
 </style>
 
-<div class="container asset-container">
+<div class="container asset-container dashboard-shell">
 
-<h1 class="page-title">Dashboard</h1>
-<div class="dash-greeting">
-    <p>Here's a quick overview of your assets.</p>
+<div class="dashboard-hero">
+    <div class="hero-main">
+        <span class="hero-kicker">Asset Command Center</span>
+        <h1 class="page-title dashboard-title">Dashboard</h1>
+        <div class="dash-greeting">
+            <p>Track inventory balance, user coverage, and recent device activity from one place while keeping the same navy and soft-blue feel as the rest of the site.</p>
+        </div>
+        <div class="hero-pill-row">
+            <div class="hero-pill">
+                <span>Coverage</span>
+                <strong><?php echo $coveragePct; ?>%</strong>
+            </div>
+            <div class="hero-pill">
+                <span>Avg Assets/User</span>
+                <strong><?php echo number_format($avgDevicesPerUser, 1); ?></strong>
+            </div>
+            <div class="hero-pill">
+                <span>Recent Adds</span>
+                <strong><?php echo $recentCount; ?></strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero-side">
+        <div class="hero-side-card">
+            <span>Top User</span>
+            <strong><?php echo htmlspecialchars($topUserName); ?></strong>
+            <p><?php echo $topUserTotal; ?> assigned device<?php echo $topUserTotal === 1 ? '' : 's'; ?> right now.</p>
+        </div>
+        <div class="hero-side-card">
+            <span>Leading Category</span>
+            <strong><?php echo htmlspecialchars($leadingType); ?></strong>
+            <p><?php echo $leadingTypeCount; ?> device<?php echo $leadingTypeCount === 1 ? '' : 's'; ?> currently lead the inventory mix.</p>
+        </div>
+        <div class="hero-side-card">
+            <span>Assigned Users</span>
+            <strong><?php echo $assignedUsers; ?></strong>
+            <p>Out of <?php echo $totalUsers; ?> total users in the system.</p>
+        </div>
+    </div>
 </div>
 
 
@@ -413,6 +860,16 @@ $deviceStats = mysqli_fetch_assoc($deviceDistResult);
         <h3>Device Distribution</h3>
         <div class="chart-wrap">
             <canvas id="donutChart"></canvas>
+            <div class="donut-center">
+                <strong><?php echo $totalAssets; ?></strong>
+                <span>Total Assets</span>
+            </div>
+        </div>
+        <div class="device-legend">
+            <div class="legend-pill"><span>Desktop</span><strong><?php echo $typeCounts['Desktop']; ?></strong></div>
+            <div class="legend-pill"><span>Laptop</span><strong><?php echo $typeCounts['Laptop']; ?></strong></div>
+            <div class="legend-pill"><span>iPad</span><strong><?php echo $typeCounts['iPad']; ?></strong></div>
+            <div class="legend-pill"><span>Phone</span><strong><?php echo $typeCounts['Phone']; ?></strong></div>
         </div>
     </div>
 
@@ -424,8 +881,9 @@ $deviceStats = mysqli_fetch_assoc($deviceDistResult);
     <?php
     $max = max(array_column($topUsers, 'total')) ?: 1;
 
-    foreach($topUsers as $u):
+    foreach($topUsers as $index => $u):
         $pct = round($u['total'] / $max * 100);
+        $toneClass = 'tone-' . (($index % 4) + 1);
     ?>
     <div class="bar-item">
         <div class="bar-label-row">
@@ -433,7 +891,7 @@ $deviceStats = mysqli_fetch_assoc($deviceDistResult);
             <span><?php echo $u['total']; ?> devices</span>
         </div>
         <div class="bar-track">
-            <div class="bar-fill green" style="width:0%" data-width="<?php echo $pct; ?>%"></div>
+            <div class="bar-fill <?php echo $toneClass; ?>" style="width:0%" data-width="<?php echo $pct; ?>%"></div>
         </div>
     </div>
     <?php endforeach; ?>
@@ -449,20 +907,25 @@ $deviceStats = mysqli_fetch_assoc($deviceDistResult);
 <div class="chart-card">
     <h3>Device Overview</h3>
 
-    <div style="display:flex;flex-direction:column;gap:16px;margin-top:10px;">
+    <div class="overview-stack">
 
-        <div style="background:#f5f7fb;padding:12px;border-radius:10px;">
-            <strong>Total Devices</strong>
-            <div style="font-size:1.5rem;font-weight:700;color:#0b2a4a;">
+        <div class="overview-box">
+            <span>Total Devices</span>
+            <strong>
                 <?php echo $deviceStats['total_devices'] ?? 0; ?>
-            </div>
+            </strong>
         </div>
 
-        <div style="background:#f5f7fb;padding:12px;border-radius:10px;">
-            <strong>Total Users Assigned</strong>
-            <div style="font-size:1.5rem;font-weight:700;color:#0b2a4a;">
+        <div class="overview-box">
+            <span>Total Users Assigned</span>
+            <strong>
                 <?php echo $deviceStats['total_users'] ?? 0; ?>
-            </div>
+            </strong>
+        </div>
+
+        <div class="overview-box">
+            <span>Most Common Device</span>
+            <strong><?php echo htmlspecialchars($leadingType); ?></strong>
         </div>
 
     </div>
@@ -522,17 +985,15 @@ new Chart(ctx, {
                 <?php echo $typeCounts['Phone']; ?>
             ],
             backgroundColor: ['#2d6a2d','#1a5276','#884ea0','#c0392b'],
-            borderWidth: 3,
-            borderColor: '#fff',
+            borderWidth: 0,
             hoverOffset: 8
         }]
     },
     options: {
-        cutout: '65%',
+        cutout: '72%',
         plugins: {
             legend: {
-                position: 'bottom',
-                labels: { padding: 12, font: { size: 11 } }
+                display: false
             }
         }
     }

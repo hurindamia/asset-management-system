@@ -1,3 +1,4 @@
+<!-- Shared footer -->
 <footer class="footer">
 
 <div class="footer-container">
@@ -12,7 +13,6 @@
 <p>IT Department</p>
 <p>it-support@company.com</p>
 </div>
-
 
 <div class="footer-section">
 <h4>System</h4>

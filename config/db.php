@@ -1,14 +1,18 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| Database connection
+|--------------------------------------------------------------------------
+*/
+
 $host = "localhost";
 $user = "root";
 $pass = "";
 $db   = "asset_list";
 
-$conn = new mysqli($host,$user,$pass,$db);
+$conn = new mysqli($host, $user, $pass, $db);
 
 if($conn->connect_error){
     die("Connection Failed: " . $conn->connect_error);
 }
-
-?>

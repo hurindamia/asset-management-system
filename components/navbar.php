@@ -1,10 +1,7 @@
-<link rel="stylesheet" href="css/style.css">
-
 <nav class="navbar">
-
 <div class="nav-container">
 
-<button class="menu-toggle" onclick="openSidebar()">☰</button>
+<button class="menu-toggle" type="button" onclick="openSidebar()">&#9776;</button>
 
 <div class="logo">
 Asset Management
@@ -16,17 +13,15 @@ Asset Management
 </ul>
 
 </div>
-
 </nav>
 
-<!-- OVERLAY -->
+<!-- Shared overlay for the sidebar drawer -->
 <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
-<!-- SIDEBAR -->
-
+<!-- Shared sidebar navigation -->
 <div id="sidebar" class="sidebar">
 
-<button class="close-sidebar" onclick="closeSidebar()">✕</button>
+<button class="close-sidebar" type="button" onclick="closeSidebar()">&times;</button>
 
 <div class="sidebar-menu">
 <a href="hardware.php">Hardware</a>
@@ -35,13 +30,14 @@ Asset Management
 <a href="users.php">User List</a>
 <a href="asset_list_option2.php">Asset List 2</a>
 </div>
+
 <div class="sidebar-profile">
-<a href="profile.php">𖨆 Profile</a>
+<a href="profile.php">Profile</a>
 </div>
 
 </div>
+
 <script>
-
 function openSidebar(){
 document.getElementById("sidebar").classList.add("active");
 document.getElementById("overlay").classList.add("active");
@@ -51,5 +47,4 @@ function closeSidebar(){
 document.getElementById("sidebar").classList.remove("active");
 document.getElementById("overlay").classList.remove("active");
 }
-
 </script>

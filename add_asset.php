@@ -25,7 +25,7 @@ if($prefill_user_id > 0){
 
     cpu.cpu_model, cpu.cpu_speed, cpu.cpu_core, cpu.cpu_hyper_thread, cpu.graphic_card,
 
-    GROUP_CONCAT(DISTINCT ram.ram_size) AS ram,
+    MAX(ram_agg.ram) AS ram,
     GROUP_CONCAT(DISTINCT storage.hdd_model) AS hdd_model,
     GROUP_CONCAT(DISTINCT storage.hdd_capacity) AS hdd_capacity,
     GROUP_CONCAT(DISTINCT storage.hdd_serial) AS hdd_serial,
@@ -36,7 +36,11 @@ if($prefill_user_id > 0){
 
     FROM assets
     LEFT JOIN cpu ON assets.asset_id = cpu.asset_id
-    LEFT JOIN ram ON assets.asset_id = ram.asset_id
+    LEFT JOIN (
+        SELECT asset_id, GROUP_CONCAT(ram_size SEPARATOR '||') AS ram
+        FROM ram
+        GROUP BY asset_id
+    ) ram_agg ON ram_agg.asset_id = assets.asset_id
     LEFT JOIN storage ON assets.asset_id = storage.asset_id
     LEFT JOIN monitor ON assets.asset_id = monitor.asset_id
     LEFT JOIN software ON assets.asset_id = software.asset_id
@@ -262,7 +266,7 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
     $d_aid      = $dev['asset_id'];
 
     // RAM
-    $d_ram_arr  = !empty($dev['ram']) ? explode(",", $dev['ram']) : [""];
+    $d_ram_arr  = !empty($dev['ram']) ? explode("||", $dev['ram']) : [""];
 
     // Storage
     $d_hdd_model    = !empty($dev['hdd_model'])    ? explode(",", $dev['hdd_model'])    : [""];
@@ -651,7 +655,7 @@ function getFieldsForType(type, i) {
 
         <div class="form-row">
         <label>Operating System</label>
-        <select name="devices[${i}][windows]" data-label="Windows Version" required>
+        <select name="devices[${i}][windows_key]" data-label="Windows Version" required>
             <option value="">Select Windows</option>
             <option>Windows 7</option>
             <option>Windows 8.1</option>
@@ -742,6 +746,7 @@ function getFieldsForType(type, i) {
 
         <div class="section">
         <div class="section-title">Software / Apps</div>
+
 
         <div id="softwareContainer_${i}">
         <div class="software-item">
@@ -943,11 +948,28 @@ function addDevice(){
 function changeDeviceType(idx, type){
     document.getElementById(`assetType_${idx}`).value = type;
     document.getElementById(`deviceFields_${idx}`).innerHTML = getFieldsForType(type, idx);
+    syncMonitorRequirements(idx, type);
 }
 
 function removeDevice(idx){
     const block = document.getElementById(`deviceBlock_${idx}`);
     if(block) block.remove();
+}
+
+function syncMonitorRequirements(idx, type){
+    const fields = document.getElementById(`deviceFields_${idx}`);
+    if(!fields) return;
+
+    const monitorInputs = fields.querySelectorAll('.monitor-item input');
+    if(monitorInputs.length === 0) return;
+
+    monitorInputs.forEach(input => {
+        if(type === 'Laptop'){
+            input.removeAttribute('required');
+        } else if(type === 'Desktop'){
+            input.setAttribute('required', 'required');
+        }
+    });
 }
 
 /* ==========================================
@@ -1038,6 +1060,7 @@ function addMonitorTo(idx){
         </div>
     `;
     container.appendChild(div);
+    syncMonitorRequirements(idx, isLaptop ? 'Laptop' : 'Desktop');
 }
 
 function addSoftwareTo(idx){
@@ -1087,6 +1110,15 @@ document.addEventListener("DOMContentLoaded", function(){
             const select = block.querySelector('.device-type-select');
             if(select && select.value === ""){
                 typeErrors.push("Device " + (i+1) + " — please select a device type");
+            }
+        });
+
+        blocks.forEach(block => {
+            const select = block.querySelector('.device-type-select');
+            const hiddenType = block.querySelector('input[id^="assetType_"]');
+            if(select && hiddenType){
+                const idx = hiddenType.id.replace('assetType_', '');
+                syncMonitorRequirements(idx, select.value);
             }
         });
 

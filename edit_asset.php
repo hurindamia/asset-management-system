@@ -48,7 +48,7 @@ cpu.cpu_core,
 cpu.cpu_hyper_thread,
 cpu.graphic_card,
 
-GROUP_CONCAT(DISTINCT ram.ram_size) AS ram,
+MAX(ram_agg.ram) AS ram,
 GROUP_CONCAT(DISTINCT storage.hdd_model) AS hdd_model,
 GROUP_CONCAT(DISTINCT storage.hdd_capacity) AS hdd_capacity,
 GROUP_CONCAT(DISTINCT storage.hdd_serial) AS hdd_serial,
@@ -62,7 +62,11 @@ GROUP_CONCAT(DISTINCT software.software_name) AS software
 FROM assets
 LEFT JOIN users ON assets.user_id = users.user_id
 LEFT JOIN cpu ON assets.asset_id = cpu.asset_id
-LEFT JOIN ram ON assets.asset_id = ram.asset_id
+LEFT JOIN (
+    SELECT asset_id, GROUP_CONCAT(ram_size SEPARATOR '||') AS ram
+    FROM ram
+    GROUP BY asset_id
+) ram_agg ON ram_agg.asset_id = assets.asset_id
 LEFT JOIN storage ON assets.asset_id = storage.asset_id
 LEFT JOIN monitor ON assets.asset_id = monitor.asset_id
 LEFT JOIN software ON assets.asset_id = software.asset_id
@@ -86,7 +90,7 @@ if(!$data){
 $asset_type = $data['asset_type'] ?? 'Desktop';
 
 /* ✅ SAFE ARRAYS */
-$ram_arr      = !empty($data['ram'])            ? explode(",", $data['ram'])            : [""];
+$ram_arr      = !empty($data['ram'])            ? explode("||", $data['ram'])           : [""];
 $hdd_model    = !empty($data['hdd_model'])      ? explode(",", $data['hdd_model'])      : [""];
 $hdd_capacity = !empty($data['hdd_capacity'])   ? explode(",", $data['hdd_capacity'])   : [""];
 $hdd_serial   = !empty($data['hdd_serial'])     ? explode(",", $data['hdd_serial'])     : [""];

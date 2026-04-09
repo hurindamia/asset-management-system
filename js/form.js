@@ -1,26 +1,72 @@
-// ---------------- RAM ----------------
+/*
+|--------------------------------------------------------------------------
+| Dynamic form item helpers
+|--------------------------------------------------------------------------
+| The add/edit asset screens use the same repeatable sections for RAM,
+| storage, monitor, and software. These helpers keep the markup, numbering,
+| and remove logic in one place.
+*/
 
-let ramCount = 1;
+const DYNAMIC_ITEM_CONFIG = {
+    ram: {
+        containerId: "ramContainer",
+        itemClass: "ram-item",
+        titleClass: "ram-title",
+        label: "RAM",
+    },
+    storage: {
+        containerId: "storageContainer",
+        itemClass: "storage-item",
+        titleClass: "storage-title",
+        label: "Storage",
+    },
+    monitor: {
+        containerId: "monitorContainer",
+        itemClass: "monitor-item",
+        titleClass: "monitor-title",
+        label: "Monitor",
+    },
+    software: {
+        containerId: "softwareContainer",
+        itemClass: "software-item",
+        titleClass: "software-title",
+        label: "Software",
+    },
+};
 
-function addRam(){
+function getDynamicContainer(type){
+    const config = DYNAMIC_ITEM_CONFIG[type];
+    return config ? document.getElementById(config.containerId) : null;
+}
 
-ramCount++;
+function getDynamicCount(type){
+    const container = getDynamicContainer(type);
+    const config = DYNAMIC_ITEM_CONFIG[type];
 
-let container = document.getElementById("ramContainer");
+    if(!container || !config){
+        return 0;
+    }
 
-let ramHTML = `
+    return container.querySelectorAll(`.${config.itemClass}`).length;
+}
+
+function getMonitorRequirement(){
+    const assetTypeInput = document.querySelector('input[name="asset_type"]');
+    const isLaptop = assetTypeInput && assetTypeInput.value === "Laptop";
+    return isLaptop ? "" : "required";
+}
+
+function buildDynamicMarkup(type, index){
+    if(type === "ram"){
+        return `
 <div class="ram-item">
-
 <div class="item-header">
-<div class="ram-title">RAM ${ramCount}</div>
+<div class="ram-title">RAM ${index}</div>
 <button type="button" class="remove-btn" onclick="removeItem(this)">Cancel</button>
 </div>
-
 <div class="form-row">
 <label>RAM Size</label>
-
 <select name="ram_size[]" required>
-
 <option value="">Select RAM</option>
 <option>2 GB</option>
 <option>4 GB</option>
@@ -28,240 +74,207 @@ let ramHTML = `
 <option>16 GB</option>
 <option>32 GB</option>
 <option>64 GB</option>
-
 </select>
-
 </div>
-
 </div>
 `;
+    }
 
-container.insertAdjacentHTML("beforeend", ramHTML);
-
-}
-
-function removeRam(button){
-
-let item = button.parentElement;
-
-item.remove();
-
-updateRamTitles();
-
-}
-
-function updateRamTitles(){
-
-let items = document.querySelectorAll(".ram-item");
-
-items.forEach((item,index)=>{
-item.querySelector(".ram-title").innerText = "RAM " + (index+1);
-});
-
-}
-
-
-// ---------------- STORAGE ----------------
-
-let storageCount = 1;
-
-function addStorage(){
-
-storageCount++;
-
-let container = document.getElementById("storageContainer");
-
-let storageHTML = `
+    if(type === "storage"){
+        return `
 <div class="storage-item">
-
 <div class="item-header">
-<div class="storage-title">Storage ${storageCount}</div>
+<div class="storage-title">Storage ${index}</div>
 <button type="button" class="remove-btn" onclick="removeItem(this)">Cancel</button>
 </div>
-
 <div class="form-row">
 <label>Model</label>
 <input type="text" name="hdd_model[]" placeholder="HDD Model" required>
 </div>
-
 <div class="form-row">
 <label>Capacity</label>
 <input type="text" name="hdd_capacity[]" placeholder="Capacity" required>
 </div>
-
 <div class="form-row">
 <label>Serial</label>
 <input type="text" name="hdd_serial[]" placeholder="Serial Number" required>
 </div>
-
 </div>
 `;
+    }
 
-container.insertAdjacentHTML("beforeend", storageHTML);
+    if(type === "monitor"){
+        const required = getMonitorRequirement();
 
-}
-
-function removeStorage(button){
-
-let item = button.parentElement;
-
-item.remove();
-
-updateStorageTitles();
-
-}
-
-function updateStorageTitles(){
-
-let items = document.querySelectorAll(".storage-item");
-
-items.forEach((item,index)=>{
-item.querySelector(".storage-title").innerText = "Storage " + (index+1);
-});
-
-}
-
-
-// ---------------- MONITOR ----------------
-
-let monitorCount = 1;
-
-function addMonitor(){
-
-monitorCount++;
-
-let container = document.getElementById("monitorContainer");
-
-let monitorHTML = `
+        return `
 <div class="monitor-item">
-
 <div class="item-header">
-<div class="monitor-title">Monitor ${monitorCount}</div>
+<div class="monitor-title">Monitor ${index}</div>
 <button type="button" class="remove-btn" onclick="removeItem(this)">Cancel</button>
 </div>
-
 <div class="form-row">
 <label>Model</label>
-<input type="text" name="monitor_model[]" placeholder="Monitor Model" required>
+<input type="text" name="monitor_model[]" placeholder="Monitor Model" ${required}>
 </div>
-
 <div class="form-row">
 <label>Size</label>
-<input type="text" name="monitor_size[]" placeholder="Monitor Size" required>
+<input type="text" name="monitor_size[]" placeholder="Monitor Size" ${required}>
 </div>
-
 <div class="form-row">
 <label>Serial</label>
-<input type="text" name="monitor_serial[]" placeholder="Serial Number" required>
+<input type="text" name="monitor_serial[]" placeholder="Serial Number" ${required}>
 </div>
-
 </div>
 `;
+    }
 
-container.insertAdjacentHTML("beforeend", monitorHTML);
+    if(type === "software"){
+        return `
+<div class="software-item">
+<div class="item-header">
+<div class="software-title">Software ${index}</div>
+<button type="button" class="remove-btn" onclick="removeSoftware(this)">Cancel</button>
+</div>
+<div class="form-row">
+<input type="text" name="software[]" placeholder="Enter Software">
+</div>
+</div>
+`;
+    }
 
+    return "";
 }
 
-function removeMonitor(button){
+function appendDynamicItem(type){
+    const container = getDynamicContainer(type);
 
-let item = button.parentElement;
+    if(!container){
+        return;
+    }
 
-item.remove();
-
-updateMonitorTitles();
-
+    const index = getDynamicCount(type) + 1;
+    container.insertAdjacentHTML("beforeend", buildDynamicMarkup(type, index));
+    renumberDynamicItems(type);
 }
 
-function updateMonitorTitles(){
+function renumberDynamicItems(type){
+    const container = getDynamicContainer(type);
+    const config = DYNAMIC_ITEM_CONFIG[type];
 
-let items = document.querySelectorAll(".monitor-item");
+    if(!container || !config){
+        return;
+    }
 
-items.forEach((item,index)=>{
-item.querySelector(".monitor-title").innerText = "Monitor " + (index+1);
-});
+    const items = container.querySelectorAll(`.${config.itemClass}`);
 
-}
+    items.forEach((item, index) => {
+        const title = item.querySelector(`.${config.titleClass}`);
 
-function removeItem(button){
-const item = button.closest(".ram-item, .storage-item, .monitor-item, .software-item");
-if(item){
-item.remove();
-}
-}
+        if(title){
+            title.innerText = `${config.label} ${index + 1}`;
+        }
 
+        if(type === "software"){
+            const formRow = item.querySelector(".form-row");
+            const existingLabel = formRow ? formRow.querySelector("label") : null;
 
-
-// ---------------- SOFTWARE ----------------
-
-function getSoftwareCount(){
-    return document.querySelectorAll("#softwareContainer .software-item").length;
-}
-
-function addSoftware(){
-
-    let container = document.getElementById("softwareContainer");
-
-    let softwareCount = getSoftwareCount() + 1;
-
-    let softwareHTML = `
-    <div class="software-item">
-
-    <div class="item-header">
-    <div class="software-title">Software ${softwareCount}</div>
-    <button type="button" class="remove-btn" onclick="removeSoftware(this)">Cancel</button>
-    </div>
-
-    <div class="form-row">
-    ${softwareCount === 1 ? '<label>Software Name</label>' : ''}
-    <input type="text" name="software[]" placeholder="Enter Software">
-    </div>
-
-    </div>
-    `;
-
-    container.insertAdjacentHTML("beforeend", softwareHTML);
-
-    updateSoftwareTitles(); // 🔥 ensure correct numbering
-}
-
-
-// REMOVE
-function removeSoftware(button){
-
-    let item = button.closest(".software-item");
-    item.remove();
-
-    updateSoftwareTitles();
-}
-
-
-// UPDATE NUMBERING
-function updateSoftwareTitles(){
-
-    let items = document.querySelectorAll("#softwareContainer .software-item");
-
-    items.forEach((item,index)=>{
-
-        // update title
-        item.querySelector(".software-title").innerText = "Software " + (index+1);
-
-        // handle label
-        let formRow = item.querySelector(".form-row");
-        let existingLabel = formRow.querySelector("label");
-
-        if(index === 0){
-            if(!existingLabel){
-                let label = document.createElement("label");
-                label.innerText = "Software Name";
-                formRow.insertBefore(label, formRow.firstChild);
-            }
-        }else{
-            if(existingLabel){
+            if(index === 0){
+                if(formRow && !existingLabel){
+                    const label = document.createElement("label");
+                    label.innerText = "Software Name";
+                    formRow.insertBefore(label, formRow.firstChild);
+                }
+            } else if(existingLabel){
                 existingLabel.remove();
             }
         }
-
     });
-
 }
 
+function getItemTypeFromButton(button){
+    if(button.closest(".ram-item")){
+        return "ram";
+    }
+
+    if(button.closest(".storage-item")){
+        return "storage";
+    }
+
+    if(button.closest(".monitor-item")){
+        return "monitor";
+    }
+
+    if(button.closest(".software-item")){
+        return "software";
+    }
+
+    return null;
+}
+
+function removeItem(button){
+    const type = getItemTypeFromButton(button);
+    const item = button.closest(".ram-item, .storage-item, .monitor-item, .software-item");
+
+    if(!item){
+        return;
+    }
+
+    item.remove();
+
+    if(type){
+        renumberDynamicItems(type);
+    }
+}
+
+// Backward-compatible wrappers used by existing inline button handlers.
+function addRam(){
+    appendDynamicItem("ram");
+}
+
+function addStorage(){
+    appendDynamicItem("storage");
+}
+
+function addMonitor(){
+    appendDynamicItem("monitor");
+}
+
+function addSoftware(){
+    appendDynamicItem("software");
+}
+
+function getSoftwareCount(){
+    return getDynamicCount("software");
+}
+
+function removeRam(button){
+    removeItem(button);
+}
+
+function removeStorage(button){
+    removeItem(button);
+}
+
+function removeMonitor(button){
+    removeItem(button);
+}
+
+function removeSoftware(button){
+    removeItem(button);
+}
+
+function updateRamTitles(){
+    renumberDynamicItems("ram");
+}
+
+function updateStorageTitles(){
+    renumberDynamicItems("storage");
+}
+
+function updateMonitorTitles(){
+    renumberDynamicItems("monitor");
+}
+
+function updateSoftwareTitles(){
+    renumberDynamicItems("software");
+}
