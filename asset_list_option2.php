@@ -5,6 +5,30 @@ function h($value){
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+function getMaskedPasswordDots(string $password): string{
+    $length = strlen($password);
+    $dotCount = max(6, min(12, $length > 0 ? $length : 6));
+    return str_repeat('&bull;', $dotCount);
+}
+
+function renderPasswordCell(string $password): string{
+    $password = trim($password);
+    if($password === ''){
+        return '<span class="asset-item-empty">N/A</span>';
+    }
+
+    $masked = getMaskedPasswordDots($password);
+    $safePassword = h($password);
+
+    return
+        '<span class="password-pill" data-password="'.$safePassword.'" data-visible="0">'.
+            '<span class="password-pill-text">'.$masked.'</span>'.
+            '<button type="button" class="password-eye-btn" onclick="togglePasswordVisibility(this)" aria-label="Show password" title="Show password">'.
+                '&#128065;'.
+            '</button>'.
+        '</span>';
+}
+
 function renderAssetItemButtons(array $items, string $label, int $uid, int $assetIndex, string $type){
     if(empty($items)){
         return '<span class="asset-item-empty">N/A</span>';
@@ -74,6 +98,7 @@ assets.pc_username,
 assets.pc_password,
 assets.pc_model,
 assets.pc_name,
+assets.pc_serial_no,
 assets.mac_lan,
 assets.mac_wifi,
 assets.antivirus,
@@ -225,11 +250,12 @@ while($row = mysqli_fetch_assoc($result)){
     $assetLabel = trim(($row['pc_name'] ?? '') !== '' ? $row['pc_name'] : ($row['pc_model'] ?? ''));
 
     $displayPcUsername = $isComputer ? h($row['pc_username']) : '<span class="asset-item-empty">N/A</span>';
-    $displayPcPassword = $isComputer ? h($row['pc_password']) : '<span class="asset-item-empty">N/A</span>';
+    $displayPcPassword = $isComputer ? renderPasswordCell((string)($row['pc_password'] ?? '')) : '<span class="asset-item-empty">N/A</span>';
     $displayPcModel    = trim((string)($row['pc_model'] ?? '')) !== '' ? h($row['pc_model']) : '<span class="asset-item-empty">N/A</span>';
     $displayPcName     = $isComputer
         ? (trim((string)($row['pc_name'] ?? '')) !== '' ? h($row['pc_name']) : '<span class="asset-item-empty">N/A</span>')
         : (trim((string)($row['serial_no'] ?? '')) !== '' ? h($row['serial_no']) : '<span class="asset-item-empty">N/A</span>');
+    $displayPcSerialNo = $isComputer && trim((string)($row['pc_serial_no'] ?? '')) !== '' ? h($row['pc_serial_no']) : '<span class="asset-item-empty">N/A</span>';
     $displayMacLan     = $isComputer && trim((string)($row['mac_lan'] ?? '')) !== '' ? h($row['mac_lan']) : '<span class="asset-item-empty">N/A</span>';
     $displayMacWifi    = trim((string)($row['mac_wifi'] ?? '')) !== '' ? h($row['mac_wifi']) : '<span class="asset-item-empty">N/A</span>';
     $displayAntivirus  = $isComputer && trim((string)($row['antivirus'] ?? '')) !== '' ? h($row['antivirus']) : '<span class="asset-item-empty">N/A</span>';
@@ -246,6 +272,7 @@ while($row = mysqli_fetch_assoc($result)){
         'pc_password'    => $displayPcPassword,
         'pc_model'       => $displayPcModel,
         'pc_name'        => $displayPcName,
+        'pc_serial_no'   => $displayPcSerialNo,
         'mac_lan'        => $displayMacLan,
         'mac_wifi'       => $displayMacWifi,
         'antivirus'      => $displayAntivirus,
@@ -261,6 +288,7 @@ while($row = mysqli_fetch_assoc($result)){
         'software_search'=> implode(" ", $softwareSearch),
         'model_name'     => (string)($row['pc_model'] ?? ''),
         'pc_name_text'   => (string)($row['pc_name'] ?? ''),
+        'pc_serial_no_text' => (string)($row['pc_serial_no'] ?? ''),
         'pc_username_text' => (string)($row['pc_username'] ?? ''),
         'pc_password_text' => (string)($row['pc_password'] ?? ''),
         'mac_lan_text'   => (string)($row['mac_lan'] ?? ''),
@@ -390,6 +418,11 @@ while($row = mysqli_fetch_assoc($result)){
     font-size: 16px;
     white-space: nowrap;
     box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-clip: padding-box;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.55), 0 6px 14px rgba(11, 42, 74, 0.12);
 }
 
 .asset-list-option2 .hardware-table td{
@@ -548,6 +581,44 @@ while($row = mysqli_fetch_assoc($result)){
 .asset-list-option2 .hardware-table td.email-col{
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+.asset-list-option2 .password-pill{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 3px 5px 3px 9px;
+    background: rgba(11, 42, 74, 0.09);
+    border: 1px solid rgba(11, 42, 74, 0.13);
+}
+
+.asset-list-option2 .password-pill-text{
+    min-width: 54px;
+    letter-spacing: 0.08em;
+    font-size: 13px;
+    line-height: 1;
+    color: #173c5b;
+}
+
+.asset-list-option2 .password-eye-btn{
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(11, 42, 74, 0.13);
+    color: #0b2a4a;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.14s ease, transform 0.14s ease;
+}
+
+.asset-list-option2 .password-eye-btn:hover{
+    background: rgba(11, 42, 74, 0.22);
+    transform: translateY(-1px);
 }
 
 .asset-list-option2 .hardware-table tbody tr:hover td{
@@ -1150,6 +1221,7 @@ while($row = mysqli_fetch_assoc($result)){
 <th class="user-col">PC Password</th>
 <th class="pc-col">PC Model</th>
 <th class="pc-col">PC Name</th>
+<th class="pc-col">PC Serial Number</th>
 <th class="pc-col">MAC LAN</th>
 <th class="pc-col">MAC WIFI</th>
 <th class="pc-col">Antivirus</th>
@@ -1183,7 +1255,7 @@ foreach($users as $uid => $user):
 <td class="user-col"><?php echo h($user['position']); ?></td>
 <td class="user-col"><?php echo h($user['contact_no']); ?></td>
 <td class="user-col email-col"><?php echo h($user['email_id']); ?></td>
-<td class="user-col"><?php echo h($user['email_password']); ?></td>
+<td class="user-col"><?php echo renderPasswordCell((string)($user['email_password'] ?? '')); ?></td>
 <td class="user-col"><?php echo h($user['mail_server']); ?></td>
 
 <td class="user-col">
@@ -1219,6 +1291,7 @@ foreach($users as $uid => $user):
 <td class="user-col cell-pc-password"><?php echo $first['pc_password']; ?></td>
 <td class="pc-col cell-pc-model"><?php echo $first['pc_model']; ?></td>
 <td class="pc-col cell-pc-name detail-trigger-cell" onclick="openCurrentDisplayedAssetPopup(<?php echo (int)$uid; ?>)"><?php echo $first['pc_name']; ?></td>
+<td class="pc-col cell-pc-serial"><?php echo $first['pc_serial_no']; ?></td>
 <td class="pc-col cell-mac-lan"><?php echo $first['mac_lan']; ?></td>
 <td class="pc-col cell-mac-wifi"><?php echo $first['mac_wifi']; ?></td>
 <td class="pc-col cell-antivirus"><?php echo $first['antivirus']; ?></td>
@@ -1364,6 +1437,51 @@ function escapeHtml(value){
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function buildMaskedPassword(value){
+  const text = String(value ?? "").trim();
+  if(text === ""){
+    return '<span class="asset-item-empty">N/A</span>';
+  }
+
+  const dotCount = Math.max(6, Math.min(12, text.length));
+  const dots = "&bull;".repeat(dotCount);
+  const safeText = escapeHtml(text);
+
+  return ''
+    + '<span class="password-pill" data-password="' + safeText + '" data-visible="0">'
+    + '  <span class="password-pill-text">' + dots + '</span>'
+    + '  <button type="button" class="password-eye-btn" onclick="togglePasswordVisibility(this)" aria-label="Show password" title="Show password">&#128065;</button>'
+    + '</span>';
+}
+
+function togglePasswordVisibility(button){
+  const pill = button.closest(".password-pill");
+  if(!pill){
+    return;
+  }
+
+  const textNode = pill.querySelector(".password-pill-text");
+  if(!textNode){
+    return;
+  }
+
+  const raw = pill.dataset.password || "";
+  const visible = pill.dataset.visible === "1";
+
+  if(visible){
+    const dotCount = Math.max(6, Math.min(12, raw.length > 0 ? raw.length : 6));
+    textNode.innerHTML = "&bull;".repeat(dotCount);
+    pill.dataset.visible = "0";
+    button.setAttribute("aria-label", "Show password");
+    button.setAttribute("title", "Show password");
+  } else {
+    textNode.textContent = raw;
+    pill.dataset.visible = "1";
+    button.setAttribute("aria-label", "Hide password");
+    button.setAttribute("title", "Hide password");
+  }
 }
 
 function renderAssetItemButtonsClient(items, label, type, uid, assetIndex){
@@ -1606,6 +1724,7 @@ function openComputerAssetPopup(uid, assetIndex){
   body += renderMobilePopupCard("PC Information", [
     ["PC Name", asset.pc_name_text],
     ["PC Model", asset.model_name],
+    ["PC Serial Number", asset.pc_serial_no_text],
     ["MAC LAN", asset.mac_lan_text],
     ["MAC WiFi", asset.mac_wifi_text],
     ["Antivirus", asset.antivirus_text],
@@ -1782,9 +1901,10 @@ function switchAsset(uid, assetIndex){
     const row = document.getElementById('row_user_'+uid);
     row.dataset.currentIndex = assetIndex;
     row.querySelector('.cell-pc-username').innerHTML = a.pc_username;
-    row.querySelector('.cell-pc-password').innerHTML = a.pc_password;
+    row.querySelector('.cell-pc-password').innerHTML = buildMaskedPassword(a.pc_password_text);
     row.querySelector('.cell-pc-model').innerHTML = a.pc_model;
     row.querySelector('.cell-pc-name').innerHTML = a.pc_name;
+    row.querySelector('.cell-pc-serial').innerHTML = a.pc_serial_no;
     row.querySelector('.cell-mac-lan').innerHTML = a.mac_lan;
     row.querySelector('.cell-mac-wifi').innerHTML = a.mac_wifi;
     row.querySelector('.cell-antivirus').innerHTML = a.antivirus;

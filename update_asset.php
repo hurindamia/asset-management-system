@@ -2,6 +2,47 @@
 include "config/db.php";
 include "config/asset_form_helpers.php";
 
+function asset_resolve_return_path(string $rawPath, string $fallback = 'asset_list_option2.php'): string{
+    $rawPath = trim($rawPath);
+    if($rawPath === '' || preg_match('/^\s*(javascript|data):/i', $rawPath)){
+        return $fallback;
+    }
+
+    $parts = parse_url($rawPath);
+    if($parts === false){
+        return $fallback;
+    }
+
+    if(isset($parts['host']) || isset($parts['scheme'])){
+        $targetHost = strtolower((string)($parts['host'] ?? ''));
+        $currentHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        if($targetHost === '' || $currentHost === '' || $targetHost !== $currentHost){
+            return $fallback;
+        }
+    }
+
+    $path = (string)($parts['path'] ?? '');
+    if($path === '' || strpos($path, '..') !== false){
+        return $fallback;
+    }
+
+    if(substr($path, 0, 1) === '/'){
+        $basePath = '/asset_management_normalization/';
+        if(strpos($path, $basePath) === 0){
+            $path = substr($path, strlen($basePath));
+        } else {
+            $path = ltrim($path, '/');
+        }
+    }
+
+    if($path === '' || strpos($path, ':') !== false){
+        return $fallback;
+    }
+
+    $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+    return $path . $query;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Load the current asset context
@@ -46,6 +87,7 @@ if($assetType === 'Desktop' || $assetType === 'Laptop'){
             pc_password='" . asset_escape($conn, asset_post('pc_password')) . "',
             pc_model='" . asset_escape($conn, asset_post('pc_model')) . "',
             pc_name='" . asset_escape($conn, asset_post('pc_name')) . "',
+            pc_serial_no='" . asset_escape($conn, asset_post('pc_serial_no')) . "',
             mac_lan='" . asset_escape($conn, asset_post('mac_lan')) . "',
             mac_wifi='" . asset_escape($conn, asset_post('mac_wifi')) . "',
             antivirus='" . asset_escape($conn, asset_post('antivirus')) . "',
@@ -119,7 +161,6 @@ if($assetType === 'Desktop' || $assetType === 'Laptop'){
     asset_replace_software_rows($conn, $assetId, $_POST['software'] ?? []);
 }
 
-echo "<script>
-alert('Asset updated successfully!');
-window.location.href='asset_detail.php?id={$assetId}';
-</script>";
+$returnTo = asset_resolve_return_path((string)($_POST['return_to'] ?? ''));
+header("Location: {$returnTo}");
+exit();

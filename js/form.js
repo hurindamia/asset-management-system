@@ -62,7 +62,7 @@ function buildDynamicMarkup(type, index){
 <div class="ram-item">
 <div class="item-header">
 <div class="ram-title">RAM ${index}</div>
-<button type="button" class="remove-btn" onclick="removeItem(this)">Cancel</button>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeItem(this)" title="Remove RAM">X</button>
 </div>
 <div class="form-row">
 <label>RAM Size</label>
@@ -85,7 +85,7 @@ function buildDynamicMarkup(type, index){
 <div class="storage-item">
 <div class="item-header">
 <div class="storage-title">Storage ${index}</div>
-<button type="button" class="remove-btn" onclick="removeItem(this)">Cancel</button>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeItem(this)" title="Remove storage">X</button>
 </div>
 <div class="form-row">
 <label>Model</label>
@@ -110,7 +110,7 @@ function buildDynamicMarkup(type, index){
 <div class="monitor-item">
 <div class="item-header">
 <div class="monitor-title">Monitor ${index}</div>
-<button type="button" class="remove-btn" onclick="removeItem(this)">Cancel</button>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeItem(this)" title="Remove monitor">X</button>
 </div>
 <div class="form-row">
 <label>Model</label>
@@ -133,7 +133,7 @@ function buildDynamicMarkup(type, index){
 <div class="software-item">
 <div class="item-header">
 <div class="software-title">Software ${index}</div>
-<button type="button" class="remove-btn" onclick="removeSoftware(this)">Cancel</button>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeSoftware(this)" title="Remove software">X</button>
 </div>
 <div class="form-row">
 <input type="text" name="software[]" placeholder="Enter Software">

@@ -65,6 +65,7 @@ if(is_array($devices)){
         if($assetType === 'Desktop' || $assetType === 'Laptop'){
             $pcModel    = asset_escape($conn, $device['pc_model'] ?? '');
             $pcName     = asset_escape($conn, $device['pc_name'] ?? '');
+            $pcSerialNo = asset_escape($conn, $device['pc_serial_no'] ?? '');
             $macLan     = asset_escape($conn, $device['mac_lan'] ?? '');
             $macWifi    = asset_escape($conn, $device['mac_wifi'] ?? '');
             $antivirus  = asset_escape($conn, $device['antivirus'] ?? '');
@@ -73,9 +74,9 @@ if(is_array($devices)){
             mysqli_query(
                 $conn,
                 "INSERT INTO assets
-                    (user_id, asset_type, pc_username, pc_password, pc_model, pc_name, mac_lan, mac_wifi, antivirus, windows_key)
+                    (user_id, asset_type, pc_username, pc_password, pc_model, pc_name, pc_serial_no, mac_lan, mac_wifi, antivirus, windows_key)
                  VALUES
-                    ('{$userId}', '{$assetType}', '{$pcUsername}', '{$pcPassword}', '{$pcModel}', '{$pcName}', '{$macLan}', '{$macWifi}', '{$antivirus}', '{$windowsKey}')"
+                    ('{$userId}', '{$assetType}', '{$pcUsername}', '{$pcPassword}', '{$pcModel}', '{$pcName}', '{$pcSerialNo}', '{$macLan}', '{$macWifi}', '{$antivirus}', '{$windowsKey}')"
             );
 
             $assetId = mysqli_insert_id($conn);

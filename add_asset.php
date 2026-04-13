@@ -1,5 +1,6 @@
 <?php
 include "config/db.php";
+include_once "components/asset_form_partials.php";
 
 $prefill_user    = null;
 $prefill_user_id = intval($_GET['user_id'] ?? 0);
@@ -17,7 +18,7 @@ if($prefill_user_id > 0){
     assets.asset_id,
     assets.asset_type,
     assets.pc_username, assets.pc_password,
-    assets.pc_model, assets.pc_name, assets.mac_lan, assets.mac_wifi,
+    assets.pc_model, assets.pc_name, assets.pc_serial_no, assets.mac_lan, assets.mac_wifi,
     assets.antivirus, assets.windows_key,
     assets.serial_no, assets.imei, assets.storage_capacity, assets.os_version,
     assets.sim_no, assets.carrier, assets.apple_id, assets.apple_password,
@@ -70,108 +71,9 @@ if($prefill_user_id > 0){
 
 <link rel="stylesheet" href="css/style.css">
 <script src="js/form.js"></script>
+<script src="js/asset-form-validation.js"></script>
 
 <?php include "components/navbar.php"; ?>
-
-<style>
-.device-block {
-    border: 2px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 24px;
-    background: #fff;
-    position: relative;
-}
-
-.device-block-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.device-block-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #333;
-}
-
-.device-type-select {
-    padding: 8px 14px;
-    border-radius: 6px;
-    border: 1.5px solid #ccc;
-    font-size: 0.95rem;
-    background: #f9f9f9;
-    cursor: pointer;
-    min-width: 160px;
-}
-
-.remove-device-btn {
-    background: #ff4d4d;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: bold;
-}
-
-.remove-device-btn:hover {
-    background: #cc0000;
-}
-
-.add-device-btn {
-    display: inline-block;
-    background: #4CAF50;
-    color: white;
-    padding: 10px 22px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    margin-bottom: 24px;
-}
-
-.add-device-btn:hover {
-    background: #388e3c;
-}
-
-.collapsible-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-}
-
-.collapsible-header .section-title {
-    margin: 0;
-}
-
-.collapsible-toggle {
-    font-size: 0.85rem;
-    color: #2d7dd2;
-    font-weight: 600;
-    background: none;
-    border: 1px solid #2d7dd2;
-    border-radius: 5px;
-    padding: 3px 10px;
-    cursor: pointer;
-}
-
-.collapsible-body {
-    display: none;
-    margin-top: 12px;
-}
-
-.collapsible-body.open {
-    display: block;
-}
-</style>
 
 <div class="container">
 
@@ -293,8 +195,8 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
             <option value="iPad"     <?php if($dtype=='iPad')     echo 'selected'; ?>>iPad</option>
             <option value="Phone"    <?php if($dtype=='Phone')    echo 'selected'; ?>>Phone</option>
         </select>
-        <a href="edit_asset.php?id=<?php echo $d_aid; ?>" class="edit-btn" style="padding:6px 12px;font-size:0.85rem;">Edit</a>
-        <a href="delete_asset.php?id=<?php echo $d_aid; ?>" class="delete-btn" style="padding:6px 12px;font-size:0.85rem;" onclick="return confirm('Delete this device?')">Delete</a>
+        <a href="edit_asset.php?id=<?php echo $d_aid; ?>&return_to=<?php echo urlencode($_SERVER['REQUEST_URI'] ?? 'add_asset.php'); ?>" class="edit-btn device-btn header-action-btn">Edit</a>
+        <a href="delete_asset.php?id=<?php echo $d_aid; ?>" class="delete-btn device-btn header-action-btn" onclick="return confirm('Delete this device?')">Delete</a>
     </div>
 </div>
 
@@ -306,6 +208,7 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 <div class="section-title">PC</div>
 <div class="form-row"><label>PC Model</label><input type="text" name="existing[<?php echo $di; ?>][pc_model]" value="<?php echo htmlspecialchars($dev['pc_model'] ?? ''); ?>"></div>
 <div class="form-row"><label>PC Name</label><input type="text" name="existing[<?php echo $di; ?>][pc_name]" value="<?php echo htmlspecialchars($dev['pc_name'] ?? ''); ?>"></div>
+<div class="form-row"><label>PC Serial Number</label><input type="text" name="existing[<?php echo $di; ?>][pc_serial_no]" value="<?php echo htmlspecialchars($dev['pc_serial_no'] ?? ''); ?>"></div>
 <div class="form-row"><label>MAC LAN</label><input type="text" name="existing[<?php echo $di; ?>][mac_lan]" value="<?php echo htmlspecialchars($dev['mac_lan'] ?? ''); ?>"></div>
 <div class="form-row"><label>MAC WIFI</label><input type="text" name="existing[<?php echo $di; ?>][mac_wifi]" value="<?php echo htmlspecialchars($dev['mac_wifi'] ?? ''); ?>"></div>
 <div class="form-row"><label>Antivirus</label><input type="text" name="existing[<?php echo $di; ?>][antivirus]" value="<?php echo htmlspecialchars($dev['antivirus'] ?? ''); ?>"></div>
@@ -330,13 +233,7 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 <div class="ram-title">RAM <?php echo $ri+1; ?></div>
 <div class="form-row"><label>RAM Size</label>
 <select name="existing[<?php echo $di; ?>][ram_size][]">
-<option value="">Select RAM</option>
-<option <?php if($ram=="2 GB")  echo "selected"; ?>>2 GB</option>
-<option <?php if($ram=="4 GB")  echo "selected"; ?>>4 GB</option>
-<option <?php if($ram=="8 GB")  echo "selected"; ?>>8 GB</option>
-<option <?php if($ram=="16 GB") echo "selected"; ?>>16 GB</option>
-<option <?php if($ram=="32 GB") echo "selected"; ?>>32 GB</option>
-<option <?php if($ram=="64 GB") echo "selected"; ?>>64 GB</option>
+<?php echo asset_form_render_ram_options($ram); ?>
 </select>
 </div>
 </div>
@@ -350,9 +247,9 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 <?php for($si=0; $si<count($d_hdd_model); $si++): ?>
 <div class="storage-item">
 <div class="storage-title">Storage <?php echo $si+1; ?></div>
-<div class="form-row"><input type="text" name="existing[<?php echo $di; ?>][hdd_model][]" value="<?php echo htmlspecialchars($d_hdd_model[$si] ?? ''); ?>"></div>
-<div class="form-row"><input type="text" name="existing[<?php echo $di; ?>][hdd_capacity][]" value="<?php echo htmlspecialchars($d_hdd_capacity[$si] ?? ''); ?>"></div>
-<div class="form-row"><input type="text" name="existing[<?php echo $di; ?>][hdd_serial][]" value="<?php echo htmlspecialchars($d_hdd_serial[$si] ?? ''); ?>"></div>
+<div class="form-row"><label>Model</label><input type="text" name="existing[<?php echo $di; ?>][hdd_model][]" value="<?php echo htmlspecialchars($d_hdd_model[$si] ?? ''); ?>" placeholder="HDD Model"></div>
+<div class="form-row"><label>Capacity</label><input type="text" name="existing[<?php echo $di; ?>][hdd_capacity][]" value="<?php echo htmlspecialchars($d_hdd_capacity[$si] ?? ''); ?>" placeholder="Capacity"></div>
+<div class="form-row"><label>Serial</label><input type="text" name="existing[<?php echo $di; ?>][hdd_serial][]" value="<?php echo htmlspecialchars($d_hdd_serial[$si] ?? ''); ?>" placeholder="Serial Number"></div>
 </div>
 <?php endfor; ?>
 </div>
@@ -362,7 +259,7 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 <?php if($dtype === 'Laptop'): ?>
 <div class="collapsible-header" onclick="toggleCollapsible(this)">
     <div class="section-title">Monitor <span style="font-size:0.8rem;color:#999;">(optional)</span></div>
-    <button type="button" class="collapsible-toggle"><?php echo !empty(array_filter($d_mon_model)) ? '− Hide' : '+ Show'; ?></button>
+    <button type="button" class="collapsible-toggle"><?php echo !empty(array_filter($d_mon_model)) ? '- Hide' : '+ Show'; ?></button>
 </div>
 <div class="collapsible-body <?php echo !empty(array_filter($d_mon_model)) ? 'open' : ''; ?>">
 <?php else: ?>
@@ -372,9 +269,9 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 <?php for($mi=0; $mi<count($d_mon_model); $mi++): ?>
 <div class="monitor-item">
 <div class="monitor-title">Monitor <?php echo $mi+1; ?></div>
-<div class="form-row"><input type="text" name="existing[<?php echo $di; ?>][monitor_model][]" value="<?php echo htmlspecialchars($d_mon_model[$mi] ?? ''); ?>" <?php if($dtype !== 'Laptop') echo 'required'; ?>></div>
-<div class="form-row"><input type="text" name="existing[<?php echo $di; ?>][monitor_size][]" value="<?php echo htmlspecialchars($d_mon_size[$mi] ?? ''); ?>" <?php if($dtype !== 'Laptop') echo 'required'; ?>></div>
-<div class="form-row"><input type="text" name="existing[<?php echo $di; ?>][monitor_serial][]" value="<?php echo htmlspecialchars($d_mon_serial[$mi] ?? ''); ?>" <?php if($dtype !== 'Laptop') echo 'required'; ?>></div>
+<div class="form-row"><label>Model</label><input type="text" name="existing[<?php echo $di; ?>][monitor_model][]" value="<?php echo htmlspecialchars($d_mon_model[$mi] ?? ''); ?>" placeholder="Monitor Model" <?php if($dtype !== 'Laptop') echo 'required'; ?>></div>
+<div class="form-row"><label>Size</label><input type="text" name="existing[<?php echo $di; ?>][monitor_size][]" value="<?php echo htmlspecialchars($d_mon_size[$mi] ?? ''); ?>" placeholder="Monitor Size" <?php if($dtype !== 'Laptop') echo 'required'; ?>></div>
+<div class="form-row"><label>Serial</label><input type="text" name="existing[<?php echo $di; ?>][monitor_serial][]" value="<?php echo htmlspecialchars($d_mon_serial[$mi] ?? ''); ?>" placeholder="Serial Number" <?php if($dtype !== 'Laptop') echo 'required'; ?>></div>
 </div>
 <?php endfor; ?>
 </div>
@@ -387,12 +284,7 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 <div class="section-title">Windows</div>
 <div class="form-row"><label>Operating System</label>
 <select name="existing[<?php echo $di; ?>][windows_key]">
-<option value="">Select Windows</option>
-<option <?php if($dev['windows_key']=="Windows 7")  echo "selected"; ?>>Windows 7</option>
-<option <?php if($dev['windows_key']=="Windows 8.1") echo "selected"; ?>>Windows 8.1</option>
-<option <?php if($dev['windows_key']=="Windows 10") echo "selected"; ?>>Windows 10</option>
-<option <?php if($dev['windows_key']=="Windows 11") echo "selected"; ?>>Windows 11</option>
-<option <?php if($dev['windows_key']=="Mac OS")     echo "selected"; ?>>Mac OS</option>
+<?php echo asset_form_render_windows_options($dev['windows_key'] ?? ''); ?>
 </select>
 </div>
 </div>
@@ -472,23 +364,20 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 
 </div><!-- end devicesWrapper -->
 
-<button type="button" class="add-device-btn" onclick="addDevice()">+ Add Device</button>
-
-<button type="submit" class="save-btn">Save Asset</button>
+<?php
+echo asset_form_render_sticky_action_bar(
+    'Save Asset',
+    'submit',
+    'save-btn',
+    '<button type="button" class="add-device-btn sticky-secondary" onclick="addDevice()">+ Add Device</button>'
+);
+?>
 
 </form>
 </div>
 
 
-<!-- ERROR POPUP -->
-<div id="errorPopup" class="popup">
-<div class="popup-box">
-<h3>Error: Missing Information!</h3>
-<p>Please fill the following fields:</p>
-<ul id="errorList" class="error-list"></ul>
-<button onclick="closeErrorPopup()" class="popup-btn">OK</button>
-</div>
-</div>
+<?php echo asset_form_render_error_popup('errorPopup', 'errorList', 'Error: Missing Information!', 'Please review the following fields:'); ?>
 
 
 <script>
@@ -513,6 +402,11 @@ function getFieldsForType(type, i) {
         <div class="form-row">
         <label>PC Name</label>
         <input type="text" name="devices[${i}][pc_name]" placeholder="PC Name" required>
+        </div>
+
+        <div class="form-row">
+        <label>PC Serial Number</label>
+        <input type="text" name="devices[${i}][pc_serial_no]" placeholder="PC Serial Number" required>
         </div>
 
         <div class="form-row">
@@ -1081,94 +975,23 @@ function addSoftwareTo(idx){
 }
 
 /* ==========================================
-   FORM VALIDATION
+   INIT
 ========================================== */
 document.addEventListener("DOMContentLoaded", function(){
-
-    // Only auto-add blank device if no existing devices are pre-filled
+    // Only auto-add blank device if no existing devices are pre-filled.
     const existingBlocks = document.querySelectorAll('.device-block');
     if(existingBlocks.length === 0){
         addDevice();
     }
-
-    const form = document.getElementById("hardwareForm");
-
-    form.addEventListener("submit", function(e){
-
-        // Check at least one device exists
-        const blocks = document.querySelectorAll('.device-block');
-        if(blocks.length === 0){
-            e.preventDefault();
-            document.getElementById("errorList").innerHTML = "<li>⚠ Please add at least one device</li>";
-            document.getElementById("errorPopup").style.display = "flex";
-            return;
-        }
-
-        // Check all device types are selected
-        let typeErrors = [];
-        blocks.forEach((block, i) => {
-            const select = block.querySelector('.device-type-select');
-            if(select && select.value === ""){
-                typeErrors.push("Device " + (i+1) + " — please select a device type");
-            }
-        });
-
-        blocks.forEach(block => {
-            const select = block.querySelector('.device-type-select');
-            const hiddenType = block.querySelector('input[id^="assetType_"]');
-            if(select && hiddenType){
-                const idx = hiddenType.id.replace('assetType_', '');
-                syncMonitorRequirements(idx, select.value);
-            }
-        });
-
-        // Check required fields
-        let requiredFields = form.querySelectorAll("[required]");
-        let missing = [];
-        let firstError = null;
-
-        document.querySelectorAll(".error-input").forEach(el=>{
-            el.classList.remove("error-input");
-        });
-
-        document.querySelectorAll(".section-error").forEach(el=>{
-            el.classList.remove("section-error");
-        });
-
-        requiredFields.forEach(field => {
-            if(field.value.trim() === ""){
-                field.classList.add("error-input");
-                let section = field.closest(".section");
-                if(section){ section.classList.add("section-error"); }
-                missing.push(field.placeholder ||field. name || field.dataset.label);
-                if(!firstError){ firstError = field; }
-            }
-        });
-
-        const allErrors = [...typeErrors, ...missing];
-
-        if(allErrors.length > 0){
-            e.preventDefault();
-            let listHTML = allErrors.map(f => `<li>⚠ ${f} is required</li>`).join("");
-            document.getElementById("errorList").innerHTML = listHTML;
-            document.getElementById("errorPopup").style.display = "flex";
-            if(firstError){ firstError.scrollIntoView({behavior:"smooth", block:"center"}); }
-        }
-
-    });
-
 });
 
 function toggleCollapsible(header){
     const body = header.nextElementSibling;
     const btn  = header.querySelector('.collapsible-toggle');
     body.classList.toggle('open');
-    btn.textContent = body.classList.contains('open') ? '− Hide' : '+ Show';
+    btn.textContent = body.classList.contains('open') ? '- Hide' : '+ Show';
 }
-
-function closeErrorPopup(){
-    document.getElementById("errorPopup").style.display = "none";
-}
+
 
 </script>
 

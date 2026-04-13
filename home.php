@@ -1,10 +1,10 @@
-<link rel="stylesheet" href="css/style.css">
+﻿<link rel="stylesheet" href="css/style.css">
 
 <?php include "components/navbar.php"; ?>
 <?php include "config/db.php"; ?>
 
 <?php
-/* ── STATS QUERIES ── */
+/* â”€â”€ STATS QUERIES â”€â”€ */
 
 // Total users
 $totalUsers = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS c FROM users"))['c'];
@@ -30,7 +30,22 @@ $recentResult = mysqli_query($conn, "
 $recentAssets = [];
 while($r = mysqli_fetch_assoc($recentResult)) $recentAssets[] = $r;
 
-/* ── TOP USERS (MOST ASSETS) ── */
+function renderRecentBadgeIcon(string $assetType): string{
+    switch($assetType){
+        case 'Desktop':
+            return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="11" rx="2"></rect><path d="M8 20h8"></path><path d="M12 15v5"></path></svg>';
+        case 'Laptop':
+            return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="10" rx="1.5"></rect><path d="M3 18h18"></path></svg>';
+        case 'iPad':
+            return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"></rect><circle cx="12" cy="18" r="0.8"></circle></svg>';
+        case 'Phone':
+            return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"></rect><path d="M10 6h4"></path><circle cx="12" cy="18.3" r="0.9"></circle></svg>';
+        default:
+            return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 4v12l-8 4-8-4V6z"></path><path d="M12 2v20"></path><path d="M4 6l8 4 8-4"></path></svg>';
+    }
+}
+
+/* â”€â”€ TOP USERS (MOST ASSETS) â”€â”€ */
 $topUsersResult = mysqli_query($conn, "
 SELECT users.name, COUNT(assets.asset_id) AS total
 FROM users
@@ -44,7 +59,7 @@ $topUsers = [];
 while($u = mysqli_fetch_assoc($topUsersResult)) $topUsers[] = $u;
 
 
-/* ── DEVICE PER USER DISTRIBUTION ── */
+/* â”€â”€ DEVICE PER USER DISTRIBUTION â”€â”€ */
 $deviceDistResult = mysqli_query($conn, "
 SELECT COUNT(*) AS total_devices, COUNT(DISTINCT user_id) AS total_users
 FROM assets
@@ -71,7 +86,7 @@ foreach($typeCounts as $type => $count){
 ?>
 
 <style>
-/* ── Dashboard Layout ── */
+/* â”€â”€ Dashboard Layout â”€â”€ */
 .dashboard-wrap {
     padding: 0 0 40px;
 }
@@ -93,7 +108,7 @@ foreach($typeCounts as $type => $count){
     margin: 0;
 }
 
-/* ── Stat Cards ── */
+/* â”€â”€ Stat Cards â”€â”€ */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -143,7 +158,7 @@ foreach($typeCounts as $type => $count){
     letter-spacing: 0.5px;
 }
 
-/* ── Charts Row ── */
+/* â”€â”€ Charts Row â”€â”€ */
 .charts-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -179,7 +194,7 @@ foreach($typeCounts as $type => $count){
     justify-content: center;
 }
 
-/* ── Bar Chart (OS / Antivirus) ── */
+/* â”€â”€ Bar Chart (OS / Antivirus) â”€â”€ */
 .bar-list {
     width: 100%;
 }
@@ -213,7 +228,7 @@ foreach($typeCounts as $type => $count){
 .bar-fill.green  { background: linear-gradient(90deg, #27ae60, #1a5276); }
 .bar-fill.orange { background: linear-gradient(90deg, #f39c12, #c0392b); }
 
-/* ── Bottom Row ── */
+/* â”€â”€ Bottom Row â”€â”€ */
 .bottom-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -224,7 +239,7 @@ foreach($typeCounts as $type => $count){
     .bottom-row { grid-template-columns: 1fr; }
 }
 
-/* ── Recent Assets ── */
+/* â”€â”€ Recent Assets â”€â”€ */
 .recent-card {
     background: #fff;
     border-radius: 12px;
@@ -284,7 +299,7 @@ foreach($typeCounts as $type => $count){
     color: #999;
 }
 
-/* ── Quick Links ── */
+/* â”€â”€ Quick Links â”€â”€ */
 .quicklinks-card {
     background: #fff;
     border-radius: 12px;
@@ -334,7 +349,7 @@ foreach($typeCounts as $type => $count){
 .ql-assets   { background: #fef3e2; color: #b7680a; }
 .ql-add      { background: #fce8e8; color: #c0392b; }
 
-/* ── Animate counters ── */
+/* â”€â”€ Animate counters â”€â”€ */
 @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -505,7 +520,8 @@ foreach($typeCounts as $type => $count){
     overflow:hidden;
     background:linear-gradient(180deg, #f4f9ff, #e7f0fb);
     border-radius:18px;
-    padding:22px 18px;
+    min-height:138px;
+    padding:16px 14px;
     text-align:left;
     border:1px solid rgba(120,156,196,0.25);
     box-shadow:0 10px 22px rgba(84,124,166,0.12);
@@ -523,14 +539,24 @@ foreach($typeCounts as $type => $count){
 }
 
 .stat-icon{
-    width:46px;
-    height:46px;
-    border-radius:14px;
+    width:40px;
+    height:40px;
+    border-radius:12px;
     display:flex;
     align-items:center;
     justify-content:center;
     background:rgba(183, 206, 229, 0.42);
-    margin:0 0 14px;
+    margin:0 0 12px;
+}
+
+.stat-icon svg{
+    width:22px;
+    height:22px;
+    stroke:#1e4c74;
+    stroke-width:2;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
 }
 
 .stat-card.users{
@@ -564,12 +590,12 @@ foreach($typeCounts as $type => $count){
 }
 
 .stat-number{
-    font-size:2.15rem;
-    margin-bottom:8px;
+    font-size:1.85rem;
+    margin-bottom:6px;
 }
 
 .stat-label{
-    font-size:0.76rem;
+    font-size:0.72rem;
     letter-spacing:0.12em;
     color:#70859a;
 }
@@ -592,10 +618,135 @@ foreach($typeCounts as $type => $count){
 }
 
 .quicklink-btn{
-    border-radius:16px;
-    padding:22px 14px;
-    border:1px solid rgba(11,42,74,0.06);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
+    position:relative;
+    overflow:hidden;
+    align-items:flex-start;
+    justify-content:flex-end;
+    min-height:156px;
+    padding:18px 18px 16px;
+    color:#0b2a4a;
+    text-align:left;
+    border-radius:20px;
+    border:1px solid rgba(11,42,74,0.10);
+    box-shadow:0 12px 24px rgba(11,42,74,0.10);
+    background:linear-gradient(145deg, #eef4fb, #dfeaf7);
+}
+
+.quicklink-btn::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(circle at top right, rgba(255,255,255,0.45), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0));
+    pointer-events:none;
+}
+
+.quicklink-btn:hover{
+    transform:translateY(-4px);
+    box-shadow:0 18px 28px rgba(11,42,74,0.14);
+}
+
+.quicklinks-card.primary-links{
+    margin-bottom:20px;
+    padding:20px;
+}
+
+.quicklinks-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.quicklinks-head h3{
+    margin:0 0 6px;
+}
+
+.quicklinks-head p{
+    margin:0;
+    color:#6f8194;
+    font-size:0.92rem;
+}
+
+.quicklink-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:14px;
+}
+
+.quicklink-btn > *{
+    position:relative;
+    z-index:1;
+}
+
+.quicklink-btn .ql-icon{
+    display:grid;
+    place-items:center;
+    width:58px;
+    height:58px;
+    margin-bottom:auto;
+    border-radius:18px;
+    background:rgba(255,255,255,0.56);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.70);
+}
+
+.quicklink-btn .ql-icon svg{
+    width:30px;
+    height:30px;
+    stroke:currentColor;
+    stroke-width:2;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+.quicklink-btn .ql-title{
+    display:block;
+    font-size:1.22rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+}
+
+.quicklink-btn .ql-sub{
+    display:block;
+    margin-top:4px;
+    color:rgba(11,42,74,0.68);
+    font-size:0.92rem;
+    line-height:1.45;
+    font-weight:600;
+}
+
+.ql-hardware{
+    color:#2b6d3b;
+    background:linear-gradient(145deg, #e9f6ec, #d7efdd);
+    border-color:rgba(43,109,59,0.22);
+}
+
+.ql-software{
+    color:#5c4597;
+    background:linear-gradient(145deg, #f0ebff, #dfd6fb);
+    border-color:rgba(92,69,151,0.22);
+}
+
+.ql-users{
+    color:#1e5f96;
+    background:linear-gradient(145deg, #e7f1ff, #d7e7fb);
+    border-color:rgba(30,95,150,0.22);
+}
+
+.ql-add{
+    color:#b45f2f;
+    background:linear-gradient(145deg, #fff6e4, #fbebc8);
+    border-color:rgba(180,95,47,0.24);
+}
+
+.ql-hardware .ql-sub,
+.ql-software .ql-sub,
+.ql-users .ql-sub,
+.ql-add .ql-sub{
+    color:rgba(11,42,74,0.66);
 }
 
 .charts-row{
@@ -705,6 +856,16 @@ foreach($typeCounts as $type => $count){
     border-radius:14px;
 }
 
+.recent-badge svg{
+    width:22px;
+    height:22px;
+    stroke:#1f4f78;
+    stroke-width:2;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
 .recent-info strong{
     color:#0b2a4a;
     font-size:0.92rem;
@@ -718,6 +879,10 @@ foreach($typeCounts as $type => $count){
 @media(max-width: 1250px){
     .stat-grid{
         grid-template-columns:repeat(3, minmax(0, 1fr));
+    }
+
+    .quicklink-grid{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -735,9 +900,16 @@ foreach($typeCounts as $type => $count){
     }
 
     .stat-grid,
-    .quicklink-grid,
     .device-legend{
         grid-template-columns:1fr;
+    }
+
+    .quicklink-grid{
+        grid-template-columns:1fr;
+    }
+
+    .quicklink-btn{
+        min-height:132px;
     }
 }
 </style>
@@ -787,75 +959,141 @@ foreach($typeCounts as $type => $count){
 </div>
 
 
-<!-- ── STAT CARDS ── -->
+<!-- â”€â”€ STAT CARDS â”€â”€ -->
+<div class="quicklinks-card primary-links">
+    <div class="quicklinks-head">
+        <div>
+            <h3>Main Access</h3>
+            <p>Jump into the four main areas of the system from one place.</p>
+        </div>
+    </div>
+
+    <div class="quicklink-grid">
+        <a href="software.php" class="quicklink-btn ql-software">
+            <span class="ql-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87 1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"></path>
+                </svg>
+            </span>
+            <span class="ql-title">Software</span>
+            <span class="ql-sub">Architecture apps and software overview.</span>
+        </a>
+        <a href="asset_list_option2.php" class="quicklink-btn ql-hardware">
+            <span class="ql-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+                    <path d="M8 20h8"></path>
+                    <path d="M12 16v4"></path>
+                </svg>
+            </span>
+            <span class="ql-title">Asset List</span>
+            <span class="ql-sub">Complete list of assets including devices, specs, and assigned equipment.</span>
+        </a>
+        <a href="users.php" class="quicklink-btn ql-users">
+            <span class="ql-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="9" cy="8" r="3"></circle>
+                    <circle cx="17" cy="9" r="2.5"></circle>
+                    <path d="M3.5 19a5.5 5.5 0 0 1 11 0"></path>
+                    <path d="M14 19a4 4 0 0 1 7.5-1.5"></path>
+                </svg>
+            </span>
+            <span class="ql-title">Users</span>
+            <span class="ql-sub">Staff list and asset ownership.</span>
+        </a>
+        <a href="add_asset.php" class="quicklink-btn ql-add">
+            <span class="ql-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+                    <path d="M12 8v8"></path>
+                    <path d="M8 12h8"></path>
+                </svg>
+            </span>
+            <span class="ql-title">Add Asset</span>
+            <span class="ql-sub">Create a new device record quickly.</span>
+        </a>
+    </div>
+</div>
+
 <div class="stat-grid">
 
     <div class="stat-card users">
-        <div class="stat-icon">👥</div>
+        <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <circle cx="9" cy="8" r="3"></circle>
+                <circle cx="17" cy="9" r="2.5"></circle>
+                <path d="M3.5 19a5.5 5.5 0 0 1 11 0"></path>
+                <path d="M14 19a4 4 0 0 1 7.5-1.5"></path>
+            </svg>
+        </div>
         <div class="stat-number" data-target="<?php echo $totalUsers; ?>">0</div>
         <div class="stat-label">Total Users</div>
     </div>
 
     <div class="stat-card assets">
-        <div class="stat-icon">📦</div>
+        <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2l8 4v12l-8 4-8-4V6z"></path>
+                <path d="M12 2v20"></path>
+                <path d="M4 6l8 4 8-4"></path>
+            </svg>
+        </div>
         <div class="stat-number" data-target="<?php echo $totalAssets; ?>">0</div>
         <div class="stat-label">Total Assets</div>
     </div>
 
     <div class="stat-card desktop">
-        <div class="stat-icon">🖥</div>
+        <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="11" rx="2"></rect>
+                <path d="M8 20h8"></path>
+                <path d="M12 15v5"></path>
+            </svg>
+        </div>
         <div class="stat-number" data-target="<?php echo $typeCounts['Desktop']; ?>">0</div>
         <div class="stat-label">Desktops</div>
     </div>
 
     <div class="stat-card laptop">
-        <div class="stat-icon">💻</div>
+        <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <rect x="5" y="5" width="14" height="10" rx="1.5"></rect>
+                <path d="M3 18h18"></path>
+            </svg>
+        </div>
         <div class="stat-number" data-target="<?php echo $typeCounts['Laptop']; ?>">0</div>
         <div class="stat-label">Laptops</div>
     </div>
 
     <div class="stat-card ipad">
-        <div class="stat-icon">📱</div>
+        <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <rect x="7" y="3" width="10" height="18" rx="2"></rect>
+                <circle cx="12" cy="18" r="0.8"></circle>
+            </svg>
+        </div>
         <div class="stat-number" data-target="<?php echo $typeCounts['iPad']; ?>">0</div>
         <div class="stat-label">iPads</div>
     </div>
 
     <div class="stat-card phone">
-        <div class="stat-icon">📞</div>
+        <div class="stat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <rect x="7" y="2.5" width="10" height="19" rx="2.2"></rect>
+                <path d="M10 6h4"></path>
+                <circle cx="12" cy="18.3" r="0.9"></circle>
+            </svg>
+        </div>
         <div class="stat-number" data-target="<?php echo $typeCounts['Phone']; ?>">0</div>
         <div class="stat-label">Phones</div>
     </div>
 
     </div>
-
-    <!-- Quick Links -->
-    <div class="quicklinks-card">
-        <h3>Quick Access</h3>
-        <div class="quicklink-grid">
-            <a href="hardware.php" class="quicklink-btn ql-hardware">
-                <span class="ql-icon">🖥</span>
-                Hardware
-            </a>
-            <a href="users.php" class="quicklink-btn ql-users">
-                <span class="ql-icon">👥</span>
-                Users
-            </a>
-            <a href="asset_list.php" class="quicklink-btn ql-assets">
-                <span class="ql-icon">📦</span>
-                Assets
-            </a>
-            <a href="add_asset.php" class="quicklink-btn ql-add">
-                <span class="ql-icon">➕</span>
-                Add Asset
-            </a>
-        </div>
-    </div>
-
-
-<!-- ── CHARTS ROW ── -->
+<!-- â”€â”€ CHARTS ROW â”€â”€ -->
 <div class="charts-row">
 
-    <!-- Donut — device types -->
+    <!-- Donut â€” device types -->
     <div class="chart-card">
         <h3>Device Distribution</h3>
         <div class="chart-wrap">
@@ -873,7 +1111,7 @@ foreach($typeCounts as $type => $count){
         </div>
     </div>
 
-    <!-- 🔥 TOP USERS -->
+    <!-- ðŸ”¥ TOP USERS -->
 <div class="chart-card">
     <h3>Top Users (Most Assets)</h3>
 
@@ -903,7 +1141,7 @@ foreach($typeCounts as $type => $count){
 </div>
 
 
-<!-- 🔥 DEVICE STATS -->
+<!-- ðŸ”¥ DEVICE STATS -->
 <div class="chart-card">
     <h3>Device Overview</h3>
 
@@ -933,7 +1171,7 @@ foreach($typeCounts as $type => $count){
 
 </div>
 
-<!-- ── BOTTOM ROW ── -->
+<!-- â”€â”€ BOTTOM ROW â”€â”€ -->
 <div class="bottom-row">
 
     <!-- Recent Assets -->
@@ -944,19 +1182,12 @@ foreach($typeCounts as $type => $count){
         <?php endif; ?>
         <?php foreach($recentAssets as $ra):
             $badgeClass = 'badge-'.strtolower($ra['asset_type']);
-            $icon = match($ra['asset_type']){
-                'Desktop' => '🖥',
-                'Laptop'  => '💻',
-                'iPad'    => '📱',
-                'Phone'   => '📞',
-                default   => '📦'
-            };
         ?>
         <a href="asset_detail.php?id=<?php echo $ra['asset_id']; ?>" class="recent-item">
-            <div class="recent-badge <?php echo $badgeClass; ?>"><?php echo $icon; ?></div>
+            <div class="recent-badge <?php echo $badgeClass; ?>"><?php echo renderRecentBadgeIcon((string)$ra['asset_type']); ?></div>
             <div class="recent-info">
                 <strong><?php echo htmlspecialchars($ra['name']); ?></strong>
-                <span><?php echo htmlspecialchars($ra['asset_type']); ?> — <?php echo htmlspecialchars($ra['pc_model'] ?? 'N/A'); ?></span>
+                <span><?php echo htmlspecialchars($ra['asset_type']); ?> - <?php echo htmlspecialchars($ra['pc_model'] ?? 'N/A'); ?></span>
             </div>
         </a>
         <?php endforeach; ?>
@@ -971,7 +1202,7 @@ foreach($typeCounts as $type => $count){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <script>
-/* ── Donut chart ── */
+/* â”€â”€ Donut chart â”€â”€ */
 const ctx = document.getElementById('donutChart').getContext('2d');
 new Chart(ctx, {
     type: 'doughnut',
@@ -999,13 +1230,13 @@ new Chart(ctx, {
     }
 });
 
-/* ── Animate bar fills ── */
+/* â”€â”€ Animate bar fills â”€â”€ */
 document.querySelectorAll('.bar-fill').forEach(bar => {
     const target = bar.getAttribute('data-width');
     setTimeout(() => { bar.style.width = target; }, 300);
 });
 
-/* ── Animate counters ── */
+/* â”€â”€ Animate counters â”€â”€ */
 document.querySelectorAll('.stat-number').forEach(el => {
     const target = parseInt(el.getAttribute('data-target'));
     if(target === 0){ el.textContent = '0'; return; }
@@ -1023,3 +1254,4 @@ document.querySelectorAll('.stat-number').forEach(el => {
 </script>
 
 <?php include "components/footer.php"; ?>
+

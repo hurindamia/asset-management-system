@@ -110,6 +110,7 @@ assets.pc_username,
 assets.pc_password,
 assets.pc_model,
 assets.pc_name,
+assets.pc_serial_no,
 assets.mac_lan,
 assets.mac_wifi,
 assets.antivirus,
@@ -224,6 +225,7 @@ $userRows = [
 $pcRows = [
     ['PC Name', $data['pc_name'] ?? ''],
     ['PC Model', $data['pc_model'] ?? ''],
+    ['PC Serial Number', $data['pc_serial_no'] ?? ''],
     ['MAC LAN', $data['mac_lan'] ?? ''],
     ['MAC WiFi', $data['mac_wifi'] ?? ''],
     ['Antivirus', $data['antivirus'] ?? ''],
@@ -390,15 +392,6 @@ $accountRows = [
 
 .hero-btn.edit-btn:hover {
     background: rgba(255,255,255,0.24);
-}
-
-.hero-btn.classic-btn {
-    background: rgba(188, 222, 255, 0.18);
-    border: 1px solid rgba(188, 222, 255, 0.28);
-}
-
-.hero-btn.classic-btn:hover {
-    background: rgba(188, 222, 255, 0.28);
 }
 
 .hero-btn.delete-btn {
@@ -707,7 +700,6 @@ $accountRows = [
 
         <div class="hero-actions">
             <a href="edit_asset.php?id=<?php echo h($data['ID']); ?>" class="edit-btn hero-btn">Edit</a>
-            <a href="asset_detail_original.php?id=<?php echo h($data['ID']); ?>" class="classic-btn hero-btn">Classic View</a>
             <a href="delete_asset.php?id=<?php echo h($data['ID']); ?>" class="delete-btn hero-btn" onclick="return confirm('Delete this asset?')">Delete</a>
         </div>
     </div>

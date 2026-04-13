@@ -20,6 +20,7 @@ assets.pc_username,
 assets.pc_password,
 assets.pc_model,
 assets.pc_name,
+assets.pc_serial_no,
 assets.mac_lan,
 assets.mac_wifi,
 assets.antivirus,
@@ -114,6 +115,7 @@ if(!$result){
 
 <th class="pc-col">PC Model</th>
 <th class="pc-col">PC Name</th>
+<th class="pc-col">PC Serial Number</th>
 <th class="pc-col">MAC LAN</th>
 <th class="pc-col">MAC WIFI</th>
 <th class="pc-col">Antivirus</th>
@@ -292,6 +294,7 @@ echo "<td class='user-col'>".$row['pc_password']."</td>";
 
 echo "<td class='pc-col'>".$row['pc_model']."</td>";
 echo "<td class='pc-col'>".$row['pc_name']."</td>";
+echo "<td class='pc-col'>".$row['pc_serial_no']."</td>";
 echo "<td class='pc-col'>".$row['mac_lan']."</td>";
 echo "<td class='pc-col'>".$row['mac_wifi']."</td>";
 echo "<td class='pc-col'>".$row['antivirus']."</td>";

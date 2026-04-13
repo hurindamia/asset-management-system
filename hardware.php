@@ -22,6 +22,7 @@ assets.pc_username,
 assets.pc_password,
 assets.pc_model,
 assets.pc_name,
+assets.pc_serial_no,
 assets.mac_lan,
 assets.mac_wifi,
 assets.antivirus,
@@ -331,6 +332,7 @@ $ram_arr = !empty($asset['ram']) ? explode("||", $asset['ram']) : [];
                 <div class="spec-section-title">PC</div>
                 <div class="spec-item"><b>Model:</b> <?php echo $asset['pc_model']; ?></div>
                 <div class="spec-item"><b>Name:</b> <?php echo $asset['pc_name']; ?></div>
+                <div class="spec-item"><b>Serial No:</b> <?php echo $asset['pc_serial_no']; ?></div>
                 <div class="spec-item"><b>MAC LAN:</b> <?php echo $asset['mac_lan']; ?></div>
                 <div class="spec-item"><b>MAC WIFI:</b> <?php echo $asset['mac_wifi']; ?></div>
                 <div class="spec-item"><b>Antivirus:</b> <?php echo $asset['antivirus']; ?></div>

@@ -47,6 +47,7 @@ assets.pc_username,
 assets.pc_password,
 assets.pc_model,
 assets.pc_name,
+assets.pc_serial_no,
 assets.mac_lan,
 assets.mac_wifi,
 assets.antivirus,
@@ -195,6 +196,7 @@ foreach($software_arr as $s){
 <div class="card-body-pc">
 <p><b>PC Name:</b> <?php echo htmlspecialchars($data['pc_name']); ?></p>
 <p><b>PC Model:</b> <?php echo htmlspecialchars($data['pc_model']); ?></p>
+<p><b>PC Serial Number:</b> <?php echo htmlspecialchars($data['pc_serial_no']); ?></p>
 <p><b>MAC LAN:</b> <?php echo htmlspecialchars($data['mac_lan']); ?></p>
 <p><b>MAC WIFI:</b> <?php echo htmlspecialchars($data['mac_wifi']); ?></p>
 <p><b>Antivirus:</b> <?php echo htmlspecialchars($data['antivirus']); ?></p>

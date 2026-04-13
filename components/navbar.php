@@ -25,10 +25,9 @@ Asset Management
 
 <div class="sidebar-menu">
 <a href="hardware.php">Hardware</a>
-<a href="add_asset.php">Add New Asset</a>
-<a href="asset_list.php">Asset List</a>
-<a href="users.php">User List</a>
-<a href="asset_list_option2.php">Asset List 2</a>
+<a href="software.php">Software</a>
+<a href="users.php">User</a>
+<a href="asset_list_option2.php">Asset List</a>
 </div>
 
 <div class="sidebar-profile">

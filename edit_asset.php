@@ -1,5 +1,6 @@
 <?php
 include "config/db.php";
+include_once "components/asset_form_partials.php";
 
 /* ✅ SAFE ID */
 $id = $_GET['id'] ?? 0;
@@ -26,6 +27,7 @@ assets.pc_username,
 assets.pc_password,
 assets.pc_model,
 assets.pc_name,
+assets.pc_serial_no,
 assets.mac_lan,
 assets.mac_wifi,
 assets.antivirus,
@@ -103,57 +105,73 @@ $software_arr = !empty($data['software'])
     ? array_filter(explode(",", $data['software']))
     : [""];
 
+$return_to = trim((string)($_GET['return_to'] ?? ($_SERVER['HTTP_REFERER'] ?? '')));
+
 ?>
 
 <link rel="stylesheet" href="css/style.css">
 <script src="js/form.js"></script>
+<script src="js/asset-form-validation.js"></script>
 
 <?php include "components/navbar.php"; ?>
 
-<div class="container">
+<div class="container form-shell">
 
 <button type="button" class="remove-btn" onclick="history.back()">Cancel</button>
 
-<h1 class="page-title">Edit Asset — <?php echo htmlspecialchars($asset_type); ?></h1>
+<div class="page-header">
+<h1 class="page-title">Edit Asset - <?php echo htmlspecialchars($asset_type); ?></h1>
+</div>
 
-<form action="update_asset.php" method="POST">
+<form action="update_asset.php" method="POST" id="editAssetForm" novalidate>
 
 <input type="hidden" name="id" value="<?php echo $data['ID']; ?>">
 <input type="hidden" name="user_id" value="<?php echo $data['user_id']; ?>">
 <input type="hidden" name="asset_type" value="<?php echo htmlspecialchars($asset_type); ?>">
+<input type="hidden" name="return_to" value="<?php echo htmlspecialchars($return_to, ENT_QUOTES, 'UTF-8'); ?>">
 
 <!-- USER -->
 <div class="section">
 <div class="section-title">User Information</div>
 
 <div class="form-row"><label>Name</label>
-<input type="text" name="name" value="<?php echo $data['name'] ?? ''; ?>"></div>
+<input type="text" name="name" required value="<?php echo $data['name'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Position</label>
-<input type="text" name="position" value="<?php echo $data['position'] ?? ''; ?>"></div>
+<input type="text" name="position" required value="<?php echo $data['position'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Contact</label>
-<input type="text" name="contact_no" value="<?php echo $data['contact_no'] ?? ''; ?>"></div>
+<input type="text" name="contact_no" required value="<?php echo $data['contact_no'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Email</label>
-<input type="text" name="email_id" value="<?php echo $data['email_id'] ?? ''; ?>"></div>
+<input type="email" name="email_id" required value="<?php echo $data['email_id'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Email Password</label>
-<input type="text" name="email_password" value="<?php echo $data['email_password'] ?? ''; ?>"></div>
+<input type="text" name="email_password" required value="<?php echo $data['email_password'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Mail Server</label>
-<input type="text" name="mail_server" value="<?php echo $data['mail_server'] ?? ''; ?>"></div>
+<input type="text" name="mail_server" required value="<?php echo $data['mail_server'] ?? ''; ?>"></div>
 
 <?php if($asset_type === 'Desktop' || $asset_type === 'Laptop'): ?>
 <div class="form-row"><label>PC Username</label>
-<input type="text" name="pc_username" value="<?php echo $data['pc_username'] ?? ''; ?>"></div>
+<input type="text" name="pc_username" required value="<?php echo $data['pc_username'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>PC Password</label>
-<input type="text" name="pc_password" value="<?php echo $data['pc_password'] ?? ''; ?>"></div>
+<input type="text" name="pc_password" required value="<?php echo $data['pc_password'] ?? ''; ?>"></div>
 <?php endif; ?>
 
 </div>
 
+<div class="device-block">
+<div class="device-block-header">
+<span class="device-block-title">Device 1 - <?php echo htmlspecialchars($asset_type); ?></span>
+<select class="device-type-select" disabled>
+<option value="Desktop" <?php if($asset_type === 'Desktop') echo 'selected'; ?>>Desktop (PC)</option>
+<option value="Laptop" <?php if($asset_type === 'Laptop') echo 'selected'; ?>>Laptop</option>
+<option value="iPad" <?php if($asset_type === 'iPad') echo 'selected'; ?>>iPad</option>
+<option value="Phone" <?php if($asset_type === 'Phone') echo 'selected'; ?>>Phone</option>
+</select>
+</div>
 
 <?php if($asset_type === 'Desktop' || $asset_type === 'Laptop'): ?>
 
@@ -162,19 +180,22 @@ $software_arr = !empty($data['software'])
 <div class="section-title">PC</div>
 
 <div class="form-row"><label>PC Model</label>
-<input type="text" name="pc_model" value="<?php echo $data['pc_model'] ?? ''; ?>"></div>
+<input type="text" name="pc_model" required value="<?php echo $data['pc_model'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>PC Name</label>
-<input type="text" name="pc_name" value="<?php echo $data['pc_name'] ?? ''; ?>"></div>
+<input type="text" name="pc_name" required value="<?php echo $data['pc_name'] ?? ''; ?>"></div>
+
+<div class="form-row"><label>PC Serial Number</label>
+<input type="text" name="pc_serial_no" required value="<?php echo $data['pc_serial_no'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>MAC LAN</label>
-<input type="text" name="mac_lan" value="<?php echo $data['mac_lan'] ?? ''; ?>"></div>
+<input type="text" name="mac_lan" required value="<?php echo $data['mac_lan'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>MAC WIFI</label>
-<input type="text" name="mac_wifi" value="<?php echo $data['mac_wifi'] ?? ''; ?>"></div>
+<input type="text" name="mac_wifi" required value="<?php echo $data['mac_wifi'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Antivirus</label>
-<input type="text" name="antivirus" value="<?php echo $data['antivirus'] ?? ''; ?>"></div>
+<input type="text" name="antivirus" required value="<?php echo $data['antivirus'] ?? ''; ?>"></div>
 
 </div>
 
@@ -183,16 +204,16 @@ $software_arr = !empty($data['software'])
 <div class="section-title">CPU</div>
 
 <div class="form-row"><label>CPU Model</label>
-<input type="text" name="cpu_model" value="<?php echo $data['cpu_model'] ?? ''; ?>"></div>
+<input type="text" name="cpu_model" required value="<?php echo $data['cpu_model'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>CPU Speed</label>
-<input type="text" name="cpu_speed" value="<?php echo $data['cpu_speed'] ?? ''; ?>"></div>
+<input type="text" name="cpu_speed" required value="<?php echo $data['cpu_speed'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>CPU Core</label>
-<input type="text" name="cpu_core" value="<?php echo $data['cpu_core'] ?? ''; ?>"></div>
+<input type="text" name="cpu_core" required value="<?php echo $data['cpu_core'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Hyper Thread</label>
-<input type="text" name="cpu_hyper_thread" value="<?php echo $data['cpu_hyper_thread'] ?? ''; ?>"></div>
+<input type="text" name="cpu_hyper_thread" required value="<?php echo $data['cpu_hyper_thread'] ?? ''; ?>"></div>
 
 </div>
 
@@ -201,7 +222,7 @@ $software_arr = !empty($data['software'])
 <div class="section-title">GPU</div>
 
 <div class="form-row">
-<input type="text" name="graphic_card" value="<?php echo $data['graphic_card'] ?? ''; ?>">
+<input type="text" name="graphic_card" required value="<?php echo $data['graphic_card'] ?? ''; ?>">
 </div>
 </div>
 
@@ -218,14 +239,8 @@ foreach($ram_arr as $i => $ram){
 <div class="ram-item">
 <div class="ram-title">RAM <?php echo $i+1; ?></div>
 <div class="form-row">
-<select name="ram_size[]">
-<option value="">Select RAM</option>
-<option <?php if($ram=="2 GB") echo "selected"; ?>>2 GB</option>
-<option <?php if($ram=="4 GB") echo "selected"; ?>>4 GB</option>
-<option <?php if($ram=="8 GB") echo "selected"; ?>>8 GB</option>
-<option <?php if($ram=="16 GB") echo "selected"; ?>>16 GB</option>
-<option <?php if($ram=="32 GB") echo "selected"; ?>>32 GB</option>
-<option <?php if($ram=="64 GB") echo "selected"; ?>>64 GB</option>
+<select name="ram_size[]" required>
+<?php echo asset_form_render_ram_options($ram); ?>
 </select>
 </div>
 </div>
@@ -249,15 +264,18 @@ for($i=0; $i<count($hdd_model); $i++){
 <div class="storage-title">Storage <?php echo $i+1; ?></div>
 
 <div class="form-row">
-<input type="text" name="hdd_model[]" value="<?php echo $hdd_model[$i] ?? ''; ?>">
+<label>Model</label>
+<input type="text" name="hdd_model[]" required value="<?php echo $hdd_model[$i] ?? ''; ?>" placeholder="HDD Model">
 </div>
 
 <div class="form-row">
-<input type="text" name="hdd_capacity[]" value="<?php echo $hdd_capacity[$i] ?? ''; ?>">
+<label>Capacity</label>
+<input type="text" name="hdd_capacity[]" required value="<?php echo $hdd_capacity[$i] ?? ''; ?>" placeholder="Capacity">
 </div>
 
 <div class="form-row">
-<input type="text" name="hdd_serial[]" value="<?php echo $hdd_serial[$i] ?? ''; ?>">
+<label>Serial</label>
+<input type="text" name="hdd_serial[]" required value="<?php echo $hdd_serial[$i] ?? ''; ?>" placeholder="Serial Number">
 </div>
 
 </div>
@@ -281,15 +299,18 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="monitor-title">Monitor <?php echo $i+1; ?></div>
 
 <div class="form-row">
-<input type="text" name="monitor_model[]" value="<?php echo $monitor_model[$i] ?? ''; ?>">
+<label>Model</label>
+<input type="text" name="monitor_model[]" value="<?php echo $monitor_model[$i] ?? ''; ?>" placeholder="Monitor Model" <?php if($asset_type !== 'Laptop') echo 'required'; ?>>
 </div>
 
 <div class="form-row">
-<input type="text" name="monitor_size[]" value="<?php echo $monitor_size[$i] ?? ''; ?>">
+<label>Size</label>
+<input type="text" name="monitor_size[]" value="<?php echo $monitor_size[$i] ?? ''; ?>" placeholder="Monitor Size" <?php if($asset_type !== 'Laptop') echo 'required'; ?>>
 </div>
 
 <div class="form-row">
-<input type="text" name="monitor_serial[]" value="<?php echo $monitor_serial[$i] ?? ''; ?>">
+<label>Serial</label>
+<input type="text" name="monitor_serial[]" value="<?php echo $monitor_serial[$i] ?? ''; ?>" placeholder="Serial Number" <?php if($asset_type !== 'Laptop') echo 'required'; ?>>
 </div>
 
 </div>
@@ -305,13 +326,8 @@ for($i=0; $i<count($monitor_model); $i++){
 
 <div class="form-row">
 <label>Operating System</label>
-<select name="windows_key">
-<option value="">Select Windows</option>
-<option <?php if($data['windows_key']=="Windows 7")  echo "selected"; ?>>Windows 7</option>
-<option <?php if($data['windows_key']=="Windows 8.1") echo "selected"; ?>>Windows 8.1</option>
-<option <?php if($data['windows_key']=="Windows 10") echo "selected"; ?>>Windows 10</option>
-<option <?php if($data['windows_key']=="Windows 11") echo "selected"; ?>>Windows 11</option>
-<option <?php if($data['windows_key']=="Mac OS")     echo "selected"; ?>>Mac OS</option>
+<select name="windows_key" required>
+<?php echo asset_form_render_windows_options($data['windows_key'] ?? ''); ?>
 </select>
 </div>
 </div>
@@ -325,7 +341,7 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="software-item">
 <div class="software-title">Software <?php echo $i+1; ?></div>
 <?php if($i != 0){ ?>
-<button type="button" class="remove-btn" onclick="removeSoftware(this)">Cancel</button>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeSoftware(this)" title="Remove software">X</button>
 <?php } ?>
 <div class="form-row">
 <input type="text" name="software[]" value="<?php echo $s; ?>" placeholder="Enter Software">
@@ -345,25 +361,25 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="section-title">iPad Info</div>
 
 <div class="form-row"><label>iPad Model</label>
-<input type="text" name="pc_model" value="<?php echo $data['pc_model'] ?? ''; ?>"></div>
+<input type="text" name="pc_model" required value="<?php echo $data['pc_model'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Serial Number</label>
-<input type="text" name="serial_no" value="<?php echo $data['serial_no'] ?? ''; ?>"></div>
+<input type="text" name="serial_no" required value="<?php echo $data['serial_no'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Storage Capacity</label>
-<input type="text" name="storage_capacity" value="<?php echo $data['storage_capacity'] ?? ''; ?>"></div>
+<input type="text" name="storage_capacity" required value="<?php echo $data['storage_capacity'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>iOS Version</label>
-<input type="text" name="os_version" value="<?php echo $data['os_version'] ?? ''; ?>"></div>
+<input type="text" name="os_version" required value="<?php echo $data['os_version'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>IMEI / UDID</label>
-<input type="text" name="imei" value="<?php echo $data['imei'] ?? ''; ?>"></div>
+<input type="text" name="imei" required value="<?php echo $data['imei'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Apple ID</label>
-<input type="text" name="apple_id" value="<?php echo $data['apple_id'] ?? ''; ?>"></div>
+<input type="text" name="apple_id" required value="<?php echo $data['apple_id'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Apple ID Password</label>
-<input type="text" name="apple_password" value="<?php echo $data['apple_password'] ?? ''; ?>"></div>
+<input type="text" name="apple_password" required value="<?php echo $data['apple_password'] ?? ''; ?>"></div>
 
 </div>
 
@@ -372,7 +388,7 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="section-title">Connectivity</div>
 
 <div class="form-row"><label>MAC WiFi</label>
-<input type="text" name="mac_wifi" value="<?php echo $data['mac_wifi'] ?? ''; ?>"></div>
+<input type="text" name="mac_wifi" required value="<?php echo $data['mac_wifi'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>SIM Number</label>
 <input type="text" name="sim_no" value="<?php echo $data['sim_no'] ?? ''; ?>"></div>
@@ -388,7 +404,7 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="software-item">
 <div class="software-title">App <?php echo $i+1; ?></div>
 <?php if($i != 0){ ?>
-<button type="button" class="remove-btn" onclick="removeSoftware(this)">Cancel</button>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeSoftware(this)" title="Remove software">X</button>
 <?php } ?>
 <div class="form-row">
 <input type="text" name="software[]" value="<?php echo $s; ?>" placeholder="App / Software Name">
@@ -408,19 +424,19 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="section-title">Phone Info</div>
 
 <div class="form-row"><label>Phone Model</label>
-<input type="text" name="pc_model" value="<?php echo $data['pc_model'] ?? ''; ?>"></div>
+<input type="text" name="pc_model" required value="<?php echo $data['pc_model'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Serial Number</label>
-<input type="text" name="serial_no" value="<?php echo $data['serial_no'] ?? ''; ?>"></div>
+<input type="text" name="serial_no" required value="<?php echo $data['serial_no'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>IMEI</label>
-<input type="text" name="imei" value="<?php echo $data['imei'] ?? ''; ?>"></div>
+<input type="text" name="imei" required value="<?php echo $data['imei'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>OS Version</label>
-<input type="text" name="os_version" value="<?php echo $data['os_version'] ?? ''; ?>"></div>
+<input type="text" name="os_version" required value="<?php echo $data['os_version'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Storage Capacity</label>
-<input type="text" name="storage_capacity" value="<?php echo $data['storage_capacity'] ?? ''; ?>"></div>
+<input type="text" name="storage_capacity" required value="<?php echo $data['storage_capacity'] ?? ''; ?>"></div>
 
 </div>
 
@@ -429,10 +445,10 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="section-title">SIM & Network</div>
 
 <div class="form-row"><label>SIM Number</label>
-<input type="text" name="sim_no" value="<?php echo $data['sim_no'] ?? ''; ?>"></div>
+<input type="text" name="sim_no" required value="<?php echo $data['sim_no'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Carrier / Provider</label>
-<input type="text" name="carrier" value="<?php echo $data['carrier'] ?? ''; ?>"></div>
+<input type="text" name="carrier" required value="<?php echo $data['carrier'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>MAC WiFi</label>
 <input type="text" name="mac_wifi" value="<?php echo $data['mac_wifi'] ?? ''; ?>"></div>
@@ -444,18 +460,22 @@ for($i=0; $i<count($monitor_model); $i++){
 <div class="section-title">Account</div>
 
 <div class="form-row"><label>Google / Apple ID</label>
-<input type="text" name="account_email" value="<?php echo $data['account_email'] ?? ''; ?>"></div>
+<input type="email" name="account_email" required value="<?php echo $data['account_email'] ?? ''; ?>"></div>
 
 <div class="form-row"><label>Account Password</label>
-<input type="text" name="account_password" value="<?php echo $data['account_password'] ?? ''; ?>"></div>
+<input type="text" name="account_password" required value="<?php echo $data['account_password'] ?? ''; ?>"></div>
 
 </div>
 
 <?php endif; ?>
 
-<button type="submit" class="save-btn">Update Asset</button>
+</div>
+
+<?php echo asset_form_render_sticky_action_bar('Update Asset'); ?>
 
 </form>
 </div>
+
+<?php echo asset_form_render_error_popup('editErrorPopup', 'editErrorList', 'Error: Missing Information!', 'Please review the following fields:'); ?>
 
 <?php include "components/footer.php"; ?>
