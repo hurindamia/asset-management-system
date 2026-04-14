@@ -65,6 +65,22 @@ function findDefaultAssetIndex(array $assets): int{
     return 0;
 }
 
+function getAssetTypeBaseLabel(string $assetType): string{
+    if($assetType === 'Desktop'){
+        return 'PC';
+    }
+    if($assetType === 'Laptop'){
+        return 'Laptop';
+    }
+    if($assetType === 'iPad'){
+        return 'iPad';
+    }
+    if($assetType === 'Phone'){
+        return 'Phone';
+    }
+    return trim($assetType) !== '' ? $assetType : 'Asset';
+}
+
 function renderActionButtons(array $asset, int $uid, int $assetIndex): string{
     $id = (int)($asset['id'] ?? 0);
     $type = $asset['asset_type'] ?? '';
@@ -267,6 +283,7 @@ while($row = mysqli_fetch_assoc($result)){
     $users[$uid]['assets'][] = [
         'id'             => (int)$row['ID'],
         'asset_type'     => $row['asset_type'],
+        'asset_type_label' => getAssetTypeBaseLabel((string)($row['asset_type'] ?? '')),
         'asset_label'    => $assetLabel,
         'pc_username'    => $displayPcUsername,
         'pc_password'    => $displayPcPassword,
@@ -321,6 +338,29 @@ while($row = mysqli_fetch_assoc($result)){
         'windows_key_text' => (string)($row['windows_key'] ?? ''),
     ];
 }
+
+foreach($users as &$user){
+    $typeTotals = [];
+    foreach($user['assets'] as $asset){
+        $type = (string)($asset['asset_type'] ?? '');
+        $typeTotals[$type] = ($typeTotals[$type] ?? 0) + 1;
+    }
+
+    $typeSeen = [];
+    foreach($user['assets'] as &$asset){
+        $type = (string)($asset['asset_type'] ?? '');
+        $typeSeen[$type] = ($typeSeen[$type] ?? 0) + 1;
+
+        $label = getAssetTypeBaseLabel($type);
+        if(($typeTotals[$type] ?? 0) > 1){
+            $label .= ' '.$typeSeen[$type];
+        }
+
+        $asset['asset_type_label'] = $label;
+    }
+    unset($asset);
+}
+unset($user);
 ?>
 
 <link rel="stylesheet" href="css/style.css">
@@ -1261,19 +1301,15 @@ foreach($users as $uid => $user):
 <td class="user-col">
 <?php foreach($assets as $ai => $asset): ?>
     <?php
-        $label = $asset['asset_type'];
+        $label = $asset['asset_type_label'] ?? getAssetTypeBaseLabel((string)($asset['asset_type'] ?? ''));
         $btnClass = 'device-btn laptop';
         if($asset['asset_type'] === 'Desktop'){
-            $label = 'PC';
             $btnClass = 'device-btn pc';
         } elseif($asset['asset_type'] === 'Laptop'){
-            $label = 'Laptop';
             $btnClass = 'device-btn laptop';
         } elseif($asset['asset_type'] === 'iPad'){
-            $label = 'iPad';
             $btnClass = 'device-btn ipad';
         } elseif($asset['asset_type'] === 'Phone'){
-            $label = 'Phone';
             $btnClass = 'device-btn phone';
         }
     ?>
@@ -1657,9 +1693,10 @@ function openComputerAssetPopup(uid, assetIndex){
   const popup = document.getElementById("computerAssetPopup");
   const box = popup.querySelector(".mobile-asset-popup-box");
   const isDesktop = asset.asset_type === "Desktop";
-  const title = isDesktop ? "PC Detail" : "Laptop Detail";
-  const kicker = isDesktop ? "PC Asset" : "Laptop Asset";
-  const subtitle = [asset.user_name, asset.asset_type, "Asset ID: " + asset.id]
+  const typeLabel = asset.asset_type_label || (isDesktop ? "PC" : "Laptop");
+  const title = typeLabel + " Detail";
+  const kicker = typeLabel + " Asset";
+  const subtitle = [asset.user_name, typeLabel, "Asset ID: " + asset.id]
     .filter(part => String(part || "").trim() !== "")
     .join(" - ");
 
@@ -1761,9 +1798,10 @@ function openMobileAssetPopup(uid, assetIndex){
   const popup = document.getElementById("mobileAssetPopup");
   const box = popup.querySelector(".mobile-asset-popup-box");
   const isIpad = asset.asset_type === "iPad";
-  const title = isIpad ? "iPad Detail" : "Phone Detail";
-  const kicker = isIpad ? "iPad Asset" : "Phone Asset";
-  const subtitle = [asset.user_name, asset.asset_type, "Asset ID: " + asset.id]
+  const typeLabel = asset.asset_type_label || (isIpad ? "iPad" : "Phone");
+  const title = typeLabel + " Detail";
+  const kicker = typeLabel + " Asset";
+  const subtitle = [asset.user_name, typeLabel, "Asset ID: " + asset.id]
     .filter(part => String(part || "").trim() !== "")
     .join(" - ");
 
