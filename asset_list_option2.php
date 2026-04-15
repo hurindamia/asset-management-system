@@ -36,10 +36,10 @@ function renderAssetItemButtons(array $items, string $label, int $uid, int $asse
 
     if($type === 'storage'){
         $class = 'asset-item-btn storage';
-        $wrapClass = 'asset-item-btn-wrap';
+        $wrapClass = 'asset-item-btn-wrap compact-wrap';
     } elseif($type === 'monitor'){
         $class = 'asset-item-btn monitor';
-        $wrapClass = 'asset-item-btn-wrap';
+        $wrapClass = 'asset-item-btn-wrap compact-wrap';
     } else {
         $class = 'asset-item-btn software';
         $wrapClass = 'asset-item-btn-wrap software-wrap';
@@ -49,7 +49,33 @@ function renderAssetItemButtons(array $items, string $label, int $uid, int $asse
 
     foreach($items as $index => $item){
         $num = $index + 1;
-        $html .= '<button type="button" class="'.$class.'" onclick="openAssetItemPopup(\''.$type.'\','.$uid.','.$assetIndex.','.$index.'); event.stopPropagation();">'.$label.' '.$num.'</button>';
+        $buttonLabel = $label.' '.$num;
+
+        if($type === 'storage'){
+            $model = trim((string)($item['model'] ?? ''));
+            $capacity = trim((string)($item['capacity'] ?? ''));
+
+            if($model !== '' && $capacity !== ''){
+                $buttonLabel = $model.' ('.$capacity.')';
+            } elseif($model !== ''){
+                $buttonLabel = $model;
+            } elseif($capacity !== ''){
+                $buttonLabel = $capacity;
+            }
+        } elseif($type === 'monitor'){
+            $model = trim((string)($item['model'] ?? ''));
+            $size = trim((string)($item['size'] ?? ''));
+
+            if($model !== '' && $size !== ''){
+                $buttonLabel = $model.' ('.$size.')';
+            } elseif($model !== ''){
+                $buttonLabel = $model;
+            } elseif($size !== ''){
+                $buttonLabel = $size;
+            }
+        }
+
+        $html .= '<button type="button" class="'.$class.'" title="'.h($buttonLabel).'" onclick="openAssetItemPopup(\''.$type.'\','.$uid.','.$assetIndex.','.$index.'); event.stopPropagation();">'.h($buttonLabel).'</button>';
     }
 
     $html .= '</div>';
@@ -671,6 +697,28 @@ unset($user);
     gap: 6px;
 }
 
+.asset-item-btn-wrap.compact-wrap{
+    display: grid;
+    grid-template-rows: repeat(2, min-content);
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    max-height: 68px;
+    padding-bottom: 2px;
+}
+
+.asset-item-btn-wrap.compact-wrap::-webkit-scrollbar{
+    height: 6px;
+}
+
+.asset-item-btn-wrap.compact-wrap::-webkit-scrollbar-thumb{
+    background: rgba(11, 42, 74, 0.28);
+    border-radius: 999px;
+}
+
 .asset-item-btn-wrap.software-wrap{
     display: grid;
     grid-template-rows: repeat(2, min-content);
@@ -745,11 +793,21 @@ unset($user);
 }
 
 .asset-item-btn.storage{
+    min-width: 148px;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     background: linear-gradient(180deg, #143f69 0%, #0b2a4a 100%);
     border-color: rgba(255, 255, 255, 0.18);
 }
 
 .asset-item-btn.monitor{
+    min-width: 148px;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     background: linear-gradient(180deg, #3e84cf 0%, #2d7dd2 100%);
     border-color: rgba(255, 255, 255, 0.2);
 }
@@ -1526,7 +1584,7 @@ function renderAssetItemButtonsClient(items, label, type, uid, assetIndex){
   }
 
   let btnClass = "asset-item-btn storage";
-  let wrapClass = "asset-item-btn-wrap";
+  let wrapClass = "asset-item-btn-wrap compact-wrap";
 
   if(type === "monitor"){
     btnClass = "asset-item-btn monitor";
@@ -1535,9 +1593,50 @@ function renderAssetItemButtonsClient(items, label, type, uid, assetIndex){
     wrapClass = "asset-item-btn-wrap software-wrap";
   }
 
+  const getButtonLabel = (item, index) => {
+    const fallback = `${label} ${index + 1}`;
+
+    if(type === "storage"){
+      const model = String((item && item.model) || "").trim();
+      const capacity = String((item && item.capacity) || "").trim();
+
+      if(model && capacity){
+        return `${model} (${capacity})`;
+      }
+      if(model){
+        return model;
+      }
+      if(capacity){
+        return capacity;
+      }
+      return fallback;
+    }
+
+    if(type === "monitor"){
+      const model = String((item && item.model) || "").trim();
+      const size = String((item && item.size) || "").trim();
+
+      if(model && size){
+        return `${model} (${size})`;
+      }
+      if(model){
+        return model;
+      }
+      if(size){
+        return size;
+      }
+      return fallback;
+    }
+
+    return fallback;
+  };
+
   return `
     <div class="${wrapClass}">
-      ${items.map((item, index) => `<button type="button" class="${btnClass}" onclick="openAssetItemPopup('${type}', ${uid}, ${assetIndex}, ${index}); event.stopPropagation();">${label} ${index + 1}</button>`).join("")}
+      ${items.map((item, index) => {
+        const buttonLabel = getButtonLabel(item, index);
+        return `<button type="button" class="${btnClass}" title="${escapeHtml(buttonLabel)}" onclick="openAssetItemPopup('${type}', ${uid}, ${assetIndex}, ${index}); event.stopPropagation();">${escapeHtml(buttonLabel)}</button>`;
+      }).join("")}
     </div>
   `;
 }
