@@ -1,6 +1,7 @@
 <?php
 include "config/db.php";
 include_once "components/asset_form_partials.php";
+include_once "config/windows_asset_helpers.php";
 
 $prefill_user    = null;
 $prefill_user_id = intval($_GET['user_id'] ?? 0);
@@ -56,6 +57,23 @@ if($prefill_user_id > 0){
         $existing_devices[] = $dev_row;
     }
 
+    $existing_asset_ids = array_map(
+        static function($device){
+            return (int)($device['asset_id'] ?? 0);
+        },
+        $existing_devices
+    );
+    $existing_windows_map = asset_fetch_windows_map($conn, $existing_asset_ids);
+    foreach($existing_devices as &$device){
+        $asset_id = (int)($device['asset_id'] ?? 0);
+        $device['windows_items'] = asset_get_windows_items_for_asset(
+            $existing_windows_map,
+            $asset_id,
+            (string)($device['windows_key'] ?? '')
+        );
+    }
+    unset($device);
+
     // Get pc_username and pc_password from first Desktop/Laptop asset
     $prefill_pc_username = '';
     $prefill_pc_password = '';
@@ -82,9 +100,9 @@ if($prefill_user_id > 0){
 <div class="page-header">
 <h1 class="page-title">
 <?php if($prefill_user): ?>
-    🖥 Add Device — <?php echo htmlspecialchars($prefill_user['name']); ?>
+    ðŸ–¥ Add Device â€” <?php echo htmlspecialchars($prefill_user['name']); ?>
 <?php else: ?>
-    🖥 Asset List Form
+    ðŸ–¥ Asset List Form
 <?php endif; ?>
 </h1>
 </div>
@@ -182,12 +200,16 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 
     // Software
     $d_software = !empty($dev['software']) ? array_filter(explode(",", $dev['software'])) : [""];
+    $d_windows_items = !empty($dev['windows_items']) ? $dev['windows_items'] : [];
+    if(empty($d_windows_items)){
+        $d_windows_items = [['window__os' => '', 'windows_serial' => '']];
+    }
 ?>
 
 <div class="device-block" id="deviceBlock_<?php echo $di; ?>">
 
 <div class="device-block-header">
-    <span class="device-block-title">Device <?php echo $di+1; ?> — <?php echo htmlspecialchars($dtype); ?></span>
+    <span class="device-block-title">Device <?php echo $di+1; ?> â€” <?php echo htmlspecialchars($dtype); ?></span>
     <div style="display:flex;gap:10px;align-items:center;">
         <select class="device-type-select" onchange="changeDeviceType(<?php echo $di; ?>, this.value)" disabled>
             <option value="Desktop"  <?php if($dtype=='Desktop')  echo 'selected'; ?>>Desktop (PC)</option>
@@ -282,10 +304,23 @@ $has_pc = empty($existing_devices) || count(array_filter($existing_devices, func
 
 <div class="section">
 <div class="section-title">Windows</div>
-<div class="form-row"><label>Operating System</label>
-<select name="existing[<?php echo $di; ?>][windows_key]">
-<?php echo asset_form_render_windows_options($dev['windows_key'] ?? ''); ?>
+<div id="windowsContainer_existing_<?php echo $di; ?>">
+<?php foreach($d_windows_items as $wi => $window): ?>
+<div class="windows-item">
+<div class="windows-title">Windows <?php echo $wi + 1; ?></div>
+<div class="form-row">
+<label>Operating System</label>
+<select name="existing[<?php echo $di; ?>][window__os][]" onchange="toggleWindowsSerialField(this)">
+<?php echo asset_form_render_windows_options($window['window__os'] ?? ''); ?>
 </select>
+</div>
+<div class="form-row windows-serial-row" style="<?php echo trim((string)($window['window__os'] ?? '')) === '' ? 'display:none;' : ''; ?>">
+<label>Windows Serial / Key</label>
+<input type="text" name="existing[<?php echo $di; ?>][windows_serial][]" value="<?php echo htmlspecialchars($window['windows_serial'] ?? ''); ?>" placeholder="Windows Serial / Product Key" <?php echo trim((string)($window['window__os'] ?? '')) === '' ? 'disabled' : ''; ?>>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
 </div>
 </div>
 
@@ -385,6 +420,8 @@ echo asset_form_render_sticky_action_bar(
 /* ==========================================
    FIELD TEMPLATES PER DEVICE TYPE
 ========================================== */
+
+const WINDOWS_MAX_ITEMS_PER_DEVICE = 10;
 
 function getFieldsForType(type, i) {
 
@@ -547,9 +584,14 @@ function getFieldsForType(type, i) {
         <div class="section">
         <div class="section-title">Windows</div>
 
+        <div id="windowsContainer_${i}">
+        <div class="windows-item">
+        <div class="item-header">
+        <div class="windows-title">Windows 1</div>
+        </div>
         <div class="form-row">
         <label>Operating System</label>
-        <select name="devices[${i}][windows_key]" data-label="Windows Version" required>
+        <select name="devices[${i}][window__os][]" data-label="Windows Version" onchange="toggleWindowsSerialField(this)" required>
             <option value="">Select Windows</option>
             <option>Windows 7</option>
             <option>Windows 8.1</option>
@@ -558,6 +600,14 @@ function getFieldsForType(type, i) {
             <option>Mac OS</option>
         </select>
         </div>
+        <div class="form-row windows-serial-row" style="display:none;">
+        <label>Windows Serial / Key</label>
+        <input type="text" name="devices[${i}][windows_serial][]" placeholder="Windows Serial / Product Key" disabled>
+        </div>
+        </div>
+        </div>
+
+        <button type="button" class="add-btn" onclick="addWindowsTo(${i})">+ Add Windows</button>
 
         </div>
 
@@ -827,7 +877,7 @@ function addDevice(){
                     <option value="iPad">iPad</option>
                     <option value="Phone">Phone</option>
                 </select>
-                <button type="button" class="remove-device-btn" onclick="removeDevice(${idx})">✕ Remove</button>
+                <button type="button" class="remove-device-btn" onclick="removeDevice(${idx})">âœ• Remove</button>
             </div>
         </div>
         <input type="hidden" name="devices[${idx}][asset_type]" id="assetType_${idx}" value="">
@@ -843,6 +893,14 @@ function changeDeviceType(idx, type){
     document.getElementById(`assetType_${idx}`).value = type;
     document.getElementById(`deviceFields_${idx}`).innerHTML = getFieldsForType(type, idx);
     syncMonitorRequirements(idx, type);
+
+    const windowsContainer = document.getElementById(`windowsContainer_${idx}`);
+    if(windowsContainer){
+        renumberWindowsItems(windowsContainer);
+        windowsContainer.querySelectorAll('select[name*="[window__os]"]').forEach(select => {
+            toggleWindowsSerialField(select);
+        });
+    }
 }
 
 function removeDevice(idx){
@@ -879,7 +937,7 @@ function addRamTo(idx){
     div.innerHTML = `
         <div class="item-header">
             <div class="ram-title">RAM ${count}</div>
-            <button type="button" class="remove-btn" onclick="this.closest('.ram-item').remove()">✕</button>
+            <button type="button" class="remove-btn" onclick="this.closest('.ram-item').remove()">âœ•</button>
         </div>
         <div class="form-row">
         <label>RAM Size</label>
@@ -905,7 +963,7 @@ function addStorageTo(idx){
     div.innerHTML = `
         <div class="item-header">
             <div class="storage-title">Storage ${count}</div>
-            <button type="button" class="remove-btn" onclick="this.closest('.storage-item').remove()">✕</button>
+            <button type="button" class="remove-btn" onclick="this.closest('.storage-item').remove()">âœ•</button>
         </div>
         <div class="form-row">
         <label>Model</label>
@@ -927,7 +985,7 @@ function addMonitorTo(idx){
     const container = document.getElementById(`monitorContainer_${idx}`);
     const count = container.querySelectorAll('.monitor-item').length + 1;
 
-    /* Check if this is inside a laptop block — look up for device-type-select */
+    /* Check if this is inside a laptop block â€” look up for device-type-select */
     const block = container.closest('.device-block');
     const select = block ? block.querySelector('.device-type-select') : null;
     const isLaptop = select && select.value === 'Laptop';
@@ -938,7 +996,7 @@ function addMonitorTo(idx){
     div.innerHTML = `
         <div class="item-header">
             <div class="monitor-title">Monitor ${count}</div>
-            <button type="button" class="remove-btn" onclick="this.closest('.monitor-item').remove()">✕</button>
+            <button type="button" class="remove-btn" onclick="this.closest('.monitor-item').remove()">âœ•</button>
         </div>
         <div class="form-row">
         <label>Model</label>
@@ -957,6 +1015,127 @@ function addMonitorTo(idx){
     syncMonitorRequirements(idx, isLaptop ? 'Laptop' : 'Desktop');
 }
 
+function toggleWindowsSerialField(selectEl){
+    const windowsItem = selectEl.closest('.windows-item');
+    if(!windowsItem){
+        return;
+    }
+
+    const serialRow = windowsItem.querySelector('.windows-serial-row');
+    const serialInput = serialRow ? serialRow.querySelector('input[name*="[windows_serial]"]') : null;
+    const hasOs = String(selectEl.value || '').trim() !== '';
+    const enforceSerial = selectEl.name.startsWith('devices[');
+
+    if(serialRow){
+        serialRow.style.display = hasOs ? '' : 'none';
+    }
+
+    if(serialInput){
+        if(hasOs){
+            serialInput.disabled = false;
+            if(enforceSerial){
+                serialInput.setAttribute('required', 'required');
+            } else {
+                serialInput.removeAttribute('required');
+            }
+        } else {
+            serialInput.disabled = true;
+            serialInput.removeAttribute('required');
+            serialInput.value = '';
+        }
+    }
+}
+
+function renumberWindowsItems(container){
+    if(!container){
+        return;
+    }
+
+    const windowsItems = container.querySelectorAll('.windows-item');
+    windowsItems.forEach((item, index) => {
+        const title = item.querySelector('.windows-title');
+        const select = item.querySelector('select[name*="[window__os]"]');
+        const removeBtn = item.querySelector('.remove-btn');
+
+        if(title){
+            title.textContent = `Windows ${index + 1}`;
+        }
+
+        if(removeBtn){
+            removeBtn.style.display = windowsItems.length > 1 ? '' : 'none';
+        }
+
+        if(select && select.name.startsWith('devices[')){
+            if(index === 0){
+                select.setAttribute('required', 'required');
+            } else {
+                select.removeAttribute('required');
+            }
+        }
+    });
+}
+
+function addWindowsItemToContainer(container, fieldPrefix){
+    if(!container){
+        return;
+    }
+
+    const currentCount = container.querySelectorAll('.windows-item').length;
+    if(currentCount >= WINDOWS_MAX_ITEMS_PER_DEVICE){
+        alert(`Maximum ${WINDOWS_MAX_ITEMS_PER_DEVICE} Windows entries per device.`);
+        return;
+    }
+
+    const index = currentCount + 1;
+    const item = document.createElement('div');
+    item.className = 'windows-item';
+    item.innerHTML = `
+        <div class="item-header">
+            <div class="windows-title">Windows ${index}</div>
+            <button type="button" class="remove-btn item-remove-btn" onclick="removeWindowsItem(this)" title="Remove Windows">X</button>
+        </div>
+        <div class="form-row">
+            <label>Operating System</label>
+            <select name="${fieldPrefix}[window__os][]" onchange="toggleWindowsSerialField(this)">
+                <option value="">Select Windows</option>
+                <option>Windows 7</option>
+                <option>Windows 8.1</option>
+                <option>Windows 10</option>
+                <option>Windows 11</option>
+                <option>Mac OS</option>
+            </select>
+        </div>
+        <div class="form-row windows-serial-row" style="display:none;">
+            <label>Windows Serial / Key</label>
+            <input type="text" name="${fieldPrefix}[windows_serial][]" placeholder="Windows Serial / Product Key" disabled>
+        </div>
+    `;
+
+    container.appendChild(item);
+    renumberWindowsItems(container);
+}
+
+function addWindowsTo(idx){
+    addWindowsItemToContainer(document.getElementById(`windowsContainer_${idx}`), `devices[${idx}]`);
+}
+
+function removeWindowsItem(button){
+    const item = button.closest('.windows-item');
+    const container = item ? item.parentElement : null;
+
+    if(!item || !container){
+        return;
+    }
+
+    const totalItems = container.querySelectorAll('.windows-item').length;
+    if(totalItems <= 1){
+        return;
+    }
+
+    item.remove();
+    renumberWindowsItems(container);
+}
+
 function addSoftwareTo(idx){
     const container = document.getElementById(`softwareContainer_${idx}`);
     const count = container.querySelectorAll('.software-item').length + 1;
@@ -965,7 +1144,7 @@ function addSoftwareTo(idx){
     div.innerHTML = `
         <div class="item-header">
             <div class="software-title">Software ${count}</div>
-            <button type="button" class="remove-btn" onclick="this.closest('.software-item').remove()">✕</button>
+            <button type="button" class="remove-btn" onclick="this.closest('.software-item').remove()">âœ•</button>
         </div>
         <div class="form-row">
         <input type="text" name="devices[${idx}][software][]" placeholder="Enter Software">
@@ -983,6 +1162,14 @@ document.addEventListener("DOMContentLoaded", function(){
     if(existingBlocks.length === 0){
         addDevice();
     }
+
+    document.querySelectorAll('[id^="windowsContainer_"]').forEach(container => {
+        renumberWindowsItems(container);
+    });
+
+    document.querySelectorAll('select[name*="[window__os]"]').forEach(select => {
+        toggleWindowsSerialField(select);
+    });
 });
 
 function toggleCollapsible(header){

@@ -4,6 +4,7 @@
 
 <?php
 include "config/db.php";
+include_once "config/windows_asset_helpers.php";
 
 /* Fetch ALL device assets per user */
 $query = "
@@ -74,8 +75,41 @@ $result = mysqli_query($conn, $query);
 if(!$result){ die("Query Error: ".mysqli_error($conn)); }
 
 /* Group rows by user */
-$users = [];
+$rows = [];
+$asset_ids = [];
 while($row = mysqli_fetch_assoc($result)){
+    $rows[] = $row;
+    $asset_ids[] = (int)($row['ID'] ?? 0);
+}
+mysqli_free_result($result);
+
+$windows_map = asset_fetch_windows_map($conn, $asset_ids);
+
+$users = [];
+foreach($rows as $row){
+    $asset_id = (int)($row['ID'] ?? 0);
+    $windows_rows = asset_get_windows_items_for_asset(
+        $windows_map,
+        $asset_id,
+        (string)($row['windows_key'] ?? '')
+    );
+    $windows_lines = [];
+    foreach($windows_rows as $window_row){
+        $window_os = trim((string)($window_row['window__os'] ?? ''));
+        $window_serial = trim((string)($window_row['windows_serial'] ?? ''));
+        if($window_os === ''){
+            continue;
+        }
+        $line = $window_os;
+        if($window_serial !== ''){
+            $line .= " - ".$window_serial;
+        }
+        $windows_lines[] = $line;
+    }
+    $row['windows_display'] = !empty($windows_lines)
+        ? implode("<br>", $windows_lines)
+        : (string)($row['windows_key'] ?? '');
+
     $uid = $row['user_id'];
     if(!isset($users[$uid])){
         $users[$uid] = [
@@ -338,7 +372,7 @@ $ram_arr = !empty($asset['ram']) ? explode("||", $asset['ram']) : [];
                 <div class="spec-item"><b>Antivirus:</b> <?php echo $asset['antivirus']; ?></div>
                 <div class="spec-item"><b>PC Username:</b> <?php echo $asset['pc_username']; ?></div>
                 <div class="spec-item"><b>PC Password:</b> <?php echo $asset['pc_password']; ?></div>
-                <div class="spec-item"><b>Windows:</b> <?php echo $asset['windows_key']; ?></div>
+                <div class="spec-item"><b>Windows:</b> <?php echo $asset['windows_display']; ?></div>
             </div>
 
             <!-- CPU -->

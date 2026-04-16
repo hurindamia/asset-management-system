@@ -1,6 +1,7 @@
 <?php
 include "config/db.php";
 include "config/asset_form_helpers.php";
+include "config/windows_asset_helpers.php";
 
 function asset_resolve_return_path(string $rawPath, string $fallback = 'asset_list_option2.php'): string{
     $rawPath = trim($rawPath);
@@ -80,6 +81,9 @@ mysqli_query(
 */
 
 if($assetType === 'Desktop' || $assetType === 'Laptop'){
+    $windowsEntries = asset_windows_from_payload($_POST, ASSET_WINDOWS_MAX_ITEMS);
+    $primaryWindowsOs = asset_escape($conn, asset_get_primary_windows_os($windowsEntries));
+
     mysqli_query(
         $conn,
         "UPDATE assets SET
@@ -91,7 +95,7 @@ if($assetType === 'Desktop' || $assetType === 'Laptop'){
             mac_lan='" . asset_escape($conn, asset_post('mac_lan')) . "',
             mac_wifi='" . asset_escape($conn, asset_post('mac_wifi')) . "',
             antivirus='" . asset_escape($conn, asset_post('antivirus')) . "',
-            windows_key='" . asset_escape($conn, asset_post('windows_key')) . "'
+            windows_key='{$primaryWindowsOs}'
          WHERE asset_id='{$assetId}'"
     );
 
@@ -124,6 +128,7 @@ if($assetType === 'Desktop' || $assetType === 'Laptop'){
         true
     );
     asset_replace_software_rows($conn, $assetId, $_POST['software'] ?? []);
+    asset_replace_windows_rows($conn, $assetId, $windowsEntries);
 } elseif($assetType === 'iPad'){
     mysqli_query(
         $conn,
@@ -141,6 +146,7 @@ if($assetType === 'Desktop' || $assetType === 'Laptop'){
     );
 
     asset_replace_software_rows($conn, $assetId, $_POST['software'] ?? []);
+    asset_replace_windows_rows($conn, $assetId, []);
 } elseif($assetType === 'Phone'){
     mysqli_query(
         $conn,
@@ -159,6 +165,7 @@ if($assetType === 'Desktop' || $assetType === 'Laptop'){
     );
 
     asset_replace_software_rows($conn, $assetId, $_POST['software'] ?? []);
+    asset_replace_windows_rows($conn, $assetId, []);
 }
 
 $returnTo = asset_resolve_return_path((string)($_POST['return_to'] ?? ''));

@@ -34,6 +34,9 @@ const DYNAMIC_ITEM_CONFIG = {
     },
 };
 
+const WINDOWS_MAX_ITEMS = 10;
+const WINDOWS_OPTIONS = ["Windows 7", "Windows 8.1", "Windows 10", "Windows 11", "Mac OS"];
+
 function getDynamicContainer(type){
     const config = DYNAMIC_ITEM_CONFIG[type];
     return config ? document.getElementById(config.containerId) : null;
@@ -278,3 +281,134 @@ function updateMonitorTitles(){
 function updateSoftwareTitles(){
     renumberDynamicItems("software");
 }
+
+function buildWindowsOptionsHtml(selected = ""){
+    const selectedValue = String(selected || "").trim();
+    let options = '<option value="">Select Windows</option>';
+
+    WINDOWS_OPTIONS.forEach((option) => {
+        const isSelected = option === selectedValue ? " selected" : "";
+        options += `<option value="${option}"${isSelected}>${option}</option>`;
+    });
+
+    return options;
+}
+
+function toggleWindowsSerialField(selectEl){
+    const windowsItem = selectEl.closest(".windows-item");
+    if(!windowsItem){
+        return;
+    }
+
+    const serialRow = windowsItem.querySelector(".windows-serial-row");
+    const serialInput = serialRow ? serialRow.querySelector('input[name="windows_serial[]"]') : null;
+    const hasOs = String(selectEl.value || "").trim() !== "";
+
+    if(serialRow){
+        serialRow.style.display = hasOs ? "" : "none";
+    }
+
+    if(serialInput){
+        if(hasOs){
+            serialInput.disabled = false;
+            serialInput.setAttribute("required", "required");
+        } else {
+            serialInput.disabled = true;
+            serialInput.removeAttribute("required");
+            serialInput.value = "";
+        }
+    }
+}
+
+function renumberWindowsItems(){
+    const container = document.getElementById("windowsContainer");
+    if(!container){
+        return;
+    }
+
+    const items = container.querySelectorAll(".windows-item");
+
+    items.forEach((item, index) => {
+        const title = item.querySelector(".windows-title");
+        const select = item.querySelector('select[name="window__os[]"]');
+        const removeBtn = item.querySelector(".remove-btn");
+
+        if(title){
+            title.textContent = `Windows ${index + 1}`;
+        }
+
+        if(select){
+            if(index === 0){
+                select.setAttribute("required", "required");
+            } else {
+                select.removeAttribute("required");
+            }
+            toggleWindowsSerialField(select);
+        }
+
+        if(removeBtn){
+            removeBtn.style.display = items.length > 1 ? "" : "none";
+        }
+    });
+}
+
+function addWindows(){
+    const container = document.getElementById("windowsContainer");
+    if(!container){
+        return;
+    }
+
+    const currentCount = container.querySelectorAll(".windows-item").length;
+    if(currentCount >= WINDOWS_MAX_ITEMS){
+        alert(`Maximum ${WINDOWS_MAX_ITEMS} Windows entries per device.`);
+        return;
+    }
+
+    const index = currentCount + 1;
+    const item = document.createElement("div");
+    item.className = "windows-item";
+    item.innerHTML = `
+<div class="item-header">
+<div class="windows-title">Windows ${index}</div>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeWindows(this)" title="Remove Windows">X</button>
+</div>
+<div class="form-row">
+<label>Operating System</label>
+<select name="window__os[]" onchange="toggleWindowsSerialField(this)">
+${buildWindowsOptionsHtml("")}
+</select>
+</div>
+<div class="form-row windows-serial-row" style="display:none;">
+<label>Windows Serial / Key</label>
+<input type="text" name="windows_serial[]" placeholder="Windows Serial / Product Key" disabled>
+</div>
+`;
+
+    container.appendChild(item);
+    renumberWindowsItems();
+}
+
+function removeWindows(button){
+    const item = button.closest(".windows-item");
+    const container = document.getElementById("windowsContainer");
+    if(!item || !container){
+        return;
+    }
+
+    const totalItems = container.querySelectorAll(".windows-item").length;
+    if(totalItems <= 1){
+        return;
+    }
+
+    item.remove();
+    renumberWindowsItems();
+}
+
+function initWindowsSection(){
+    renumberWindowsItems();
+}
+
+window.toggleWindowsSerialField = toggleWindowsSerialField;
+window.addWindows = addWindows;
+window.removeWindows = removeWindows;
+window.initWindowsSection = initWindowsSection;

@@ -28,7 +28,7 @@ function asset_first_value(array $source, array $keys, $default = ''){
 }
 
 function asset_delete_child_rows($conn, $table, $assetId){
-    $allowedTables = ['cpu', 'monitor', 'ram', 'software', 'storage'];
+    $allowedTables = ['cpu', 'monitor', 'ram', 'software', 'storage', 'asset_windows'];
 
     if(!in_array($table, $allowedTables, true)){
         return false;

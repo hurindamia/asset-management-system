@@ -1,5 +1,6 @@
 <?php
 include "config/db.php";
+include_once "config/windows_asset_helpers.php";
 
 function h($value){
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
@@ -40,6 +41,9 @@ function renderAssetItemButtons(array $items, string $label, int $uid, int $asse
     } elseif($type === 'monitor'){
         $class = 'asset-item-btn monitor';
         $wrapClass = 'asset-item-btn-wrap compact-wrap';
+    } elseif($type === 'windows'){
+        $class = 'asset-item-btn windows';
+        $wrapClass = 'asset-item-btn-wrap compact-wrap';
     } else {
         $class = 'asset-item-btn software';
         $wrapClass = 'asset-item-btn-wrap software-wrap';
@@ -72,6 +76,11 @@ function renderAssetItemButtons(array $items, string $label, int $uid, int $asse
                 $buttonLabel = $model;
             } elseif($size !== ''){
                 $buttonLabel = $size;
+            }
+        } elseif($type === 'windows'){
+            $windowOs = trim((string)($item['window__os'] ?? ''));
+            if($windowOs !== ''){
+                $buttonLabel = $windowOs;
             }
         }
 
@@ -194,9 +203,20 @@ if(!$result){
     die("Query Error: ".mysqli_error($conn));
 }
 
-$users = [];
+$rows = [];
+$asset_ids = [];
 while($row = mysqli_fetch_assoc($result)){
+    $rows[] = $row;
+    $asset_ids[] = (int)($row['ID'] ?? 0);
+}
+mysqli_free_result($result);
+
+$windows_map = asset_fetch_windows_map($conn, $asset_ids);
+
+$users = [];
+foreach($rows as $row){
     $uid = $row['user_id'];
+    $assetId = (int)($row['ID'] ?? 0);
 
     if(!isset($users[$uid])){
         $users[$uid] = [
@@ -285,7 +305,35 @@ while($row = mysqli_fetch_assoc($result)){
         }
     }
 
+    $windowsItemsRaw = asset_get_windows_items_for_asset(
+        $windows_map,
+        $assetId,
+        (string)($row['windows_key'] ?? '')
+    );
+    $windowsItems = [];
+    $windowsSearch = [];
+    foreach($windowsItemsRaw as $windowItem){
+        $windowOs = trim((string)($windowItem['window__os'] ?? ''));
+        $windowSerial = trim((string)($windowItem['windows_serial'] ?? ''));
+
+        if($windowOs === ''){
+            continue;
+        }
+
+        $windowsItems[] = [
+            'window__os' => $windowOs,
+            'windows_serial' => $windowSerial,
+        ];
+        $windowsSearch[] = trim($windowOs.' '.$windowSerial);
+    }
+
     $isComputer = in_array($row['asset_type'], ['Desktop', 'Laptop'], true);
+    if(!$isComputer){
+        $mobileOs = trim((string)($row['os_version'] ?? ''));
+        if($mobileOs !== ''){
+            $windowsSearch[] = $mobileOs;
+        }
+    }
     $cpuDisplay = ($isComputer && trim((string)($row['cpu_model'] ?? '')) !== '')
         ? h($row['cpu_model'])."<br><span style='font-size:12px;opacity:0.7;'>".h($row['cpu_speed'])." GHz &bull; ".h($row['cpu_core'])." Cores</span>"
         : '<span class="asset-item-empty">N/A</span>';
@@ -303,11 +351,11 @@ while($row = mysqli_fetch_assoc($result)){
     $displayAntivirus  = $isComputer && trim((string)($row['antivirus'] ?? '')) !== '' ? h($row['antivirus']) : '<span class="asset-item-empty">N/A</span>';
     $displayGpu        = $isComputer && trim((string)($row['graphic_card'] ?? '')) !== '' ? h($row['graphic_card']) : '<span class="asset-item-empty">N/A</span>';
     $displayWindows    = $isComputer
-        ? (trim((string)($row['windows_key'] ?? '')) !== '' ? h($row['windows_key']) : '<span class="asset-item-empty">N/A</span>')
+        ? renderAssetItemButtons($windowsItems, 'Windows', (int)$uid, count($users[$uid]['assets']), 'windows')
         : (trim((string)($row['os_version'] ?? '')) !== '' ? h($row['os_version']) : '<span class="asset-item-empty">N/A</span>');
 
     $users[$uid]['assets'][] = [
-        'id'             => (int)$row['ID'],
+        'id'             => $assetId,
         'asset_type'     => $row['asset_type'],
         'asset_type_label' => getAssetTypeBaseLabel((string)($row['asset_type'] ?? '')),
         'asset_label'    => $assetLabel,
@@ -325,8 +373,10 @@ while($row = mysqli_fetch_assoc($result)){
         'ram'            => $ramDisplay,
         'storage_items'  => $storageItems,
         'monitor_items'  => $monitorItems,
+        'windows_items'  => $windowsItems,
         'storage_search' => implode(" ", $storageSearch),
         'monitor_search' => implode(" ", $monitorSearch),
+        'windows_search' => implode(" ", $windowsSearch),
         'software_items' => $softwareItems,
         'software_search'=> implode(" ", $softwareSearch),
         'model_name'     => (string)($row['pc_model'] ?? ''),
@@ -361,7 +411,7 @@ while($row = mysqli_fetch_assoc($result)){
         'apple_password' => (string)($row['apple_password'] ?? ''),
         'account_email'  => (string)($row['account_email'] ?? ''),
         'account_password' => (string)($row['account_password'] ?? ''),
-        'windows_key_text' => (string)($row['windows_key'] ?? ''),
+        'windows_key_text' => asset_get_primary_windows_os($windowsItemsRaw),
     ];
 }
 
@@ -812,6 +862,16 @@ unset($user);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
+.asset-item-btn.windows{
+    min-width: 148px;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: #2f7b86;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
 .asset-item-btn.software{
     display: inline-flex;
     align-items: center;
@@ -884,6 +944,14 @@ unset($user);
     --popup-accent: #4f68a0;
     --popup-muted: #627aa8;
     --popup-border: #c7d4ee;
+}
+
+.asset-item-popup-box.windows-theme{
+    --popup-bg: #eaf5f7;
+    --popup-panel: #d7eef1;
+    --popup-accent: #2f7b86;
+    --popup-muted: #3f6f76;
+    --popup-border: #bfdfe4;
 }
 
 .asset-item-popup-box.software-theme{
@@ -1394,7 +1462,7 @@ foreach($users as $uid => $user):
 <td class="ram-col cell-ram"><?php echo $first['ram']; ?></td>
 <td class="storage-col cell-storage" data-search-text="<?php echo h($first['storage_search']); ?>"><?php echo renderAssetItemButtons($first['storage_items'], 'Storage', (int)$uid, $displayIndex, 'storage'); ?></td>
 <td class="monitor-col cell-monitor" data-search-text="<?php echo h($first['monitor_search']); ?>"><?php echo renderAssetItemButtons($first['monitor_items'], 'Monitor', (int)$uid, $displayIndex, 'monitor'); ?></td>
-<td class="windows-col cell-windows"><?php echo $first['windows_key']; ?></td>
+<td class="windows-col cell-windows" data-search-text="<?php echo h($first['windows_search']); ?>"><?php echo $first['windows_key']; ?></td>
 <td class="software-col cell-software" data-search-text="<?php echo h($first['software_search']); ?>"><?php echo renderAssetItemButtons($first['software_items'], 'Software', (int)$uid, $displayIndex, 'software'); ?></td>
 
 <td class="action-col cell-action">
@@ -1476,8 +1544,48 @@ function fuzzyMatch(text, input){
   return text.split(" ").some(w => w.startsWith(input) || w.includes(input));
 }
 
+function escapeRegExp(value){
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isHighlightableCell(cell){
+  if(!cell){
+    return false;
+  }
+
+  const interactiveSelector = "a,button,input,select,textarea,svg,img,.asset-item-btn-wrap,.password-pill";
+  if(cell.querySelector(interactiveSelector)){
+    return false;
+  }
+
+  const children = Array.from(cell.children || []);
+  return children.length === 0 || children.every(child => child.classList.contains("highlight"));
+}
+
+function clearCellHighlight(cell){
+  if(!isHighlightableCell(cell)){
+    return;
+  }
+
+  cell.innerHTML = cell.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/gi, "$1");
+}
+
+function applyCellHighlight(cell, input){
+  if(!input || !isHighlightableCell(cell)){
+    return;
+  }
+
+  const cellText = String(cell.textContent || "").trim();
+  if(cellText === ""){
+    return;
+  }
+
+  const regex = new RegExp(`(${escapeRegExp(input)})`, "gi");
+  cell.innerHTML = escapeHtml(cellText).replace(regex, '<span class="highlight">$1</span>');
+}
+
 function searchTable(){
-  const input = document.getElementById("searchInput").value.toLowerCase();
+  const input = document.getElementById("searchInput").value.toLowerCase().trim();
   const bodies = document.querySelectorAll(".hardware-table tbody");
   let found = false;
   let firstMatch = null;
@@ -1492,10 +1600,9 @@ function searchTable(){
     const match = input ? fuzzyMatch(textContent, input) : true;
 
     body.querySelectorAll("td").forEach(cell => {
-      cell.innerHTML = cell.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/gi, "$1");
+      clearCellHighlight(cell);
       if(input && fuzzyMatch(cell.innerText.toLowerCase(), input)){
-        const regex = new RegExp(`(${input})`, "gi");
-        cell.innerHTML = cell.innerHTML.replace(regex, '<span class="highlight">$1</span>');
+        applyCellHighlight(cell, input);
       }
     });
 
@@ -1588,6 +1695,8 @@ function renderAssetItemButtonsClient(items, label, type, uid, assetIndex){
 
   if(type === "monitor"){
     btnClass = "asset-item-btn monitor";
+  } else if(type === "windows"){
+    btnClass = "asset-item-btn windows";
   } else if(type === "software"){
     btnClass = "asset-item-btn software";
     wrapClass = "asset-item-btn-wrap software-wrap";
@@ -1628,6 +1737,14 @@ function renderAssetItemButtonsClient(items, label, type, uid, assetIndex){
       return fallback;
     }
 
+    if(type === "windows"){
+      const os = String((item && item.window__os) || "").trim();
+      if(os){
+        return os;
+      }
+      return fallback;
+    }
+
     return fallback;
   };
 
@@ -1647,13 +1764,20 @@ function openAssetItemPopup(type, uid, assetIndex, itemIndex){
   const asset = (window.userAssets[uid] || [])[assetIndex];
   if(!asset){ return; }
 
-  const items = type === "storage"
-    ? asset.storage_items
-    : (type === "monitor" ? asset.monitor_items : asset.software_items);
+  let items = asset.software_items;
+  if(type === "storage"){
+    items = asset.storage_items;
+  } else if(type === "monitor"){
+    items = asset.monitor_items;
+  } else if(type === "windows"){
+    items = asset.windows_items;
+  }
   const item = Array.isArray(items) ? items[itemIndex] : null;
   if(!item){ return; }
 
-  const label = type === "storage" ? "Storage" : (type === "monitor" ? "Monitor" : "Software");
+  const label = type === "storage"
+    ? "Storage"
+    : (type === "monitor" ? "Monitor" : (type === "windows" ? "Windows" : "Software"));
   const title = `${label} ${itemIndex + 1}`;
   const subtitleParts = [];
   if(asset.asset_type){ subtitleParts.push(asset.asset_type); }
@@ -1668,16 +1792,21 @@ function openAssetItemPopup(type, uid, assetIndex, itemIndex){
     rows += `<div class="asset-item-popup-row"><strong>Model</strong><span>${escapeHtml(item.model || "-")}</span></div>`;
     rows += `<div class="asset-item-popup-row"><strong>Size</strong><span>${escapeHtml(item.size || "-")}</span></div>`;
     rows += `<div class="asset-item-popup-row"><strong>Serial</strong><span>${escapeHtml(item.serial || "-")}</span></div>`;
+  } else if(type === "windows") {
+    rows += `<div class="asset-item-popup-row"><strong>Operating System</strong><span>${escapeHtml(item.window__os || "-")}</span></div>`;
+    rows += `<div class="asset-item-popup-row"><strong>Windows Serial / Key</strong><span>${escapeHtml(item.windows_serial || "-")}</span></div>`;
   } else {
     rows += `<div class="asset-item-popup-row"><strong>Software Name</strong><span>${escapeHtml(item.name || "-")}</span></div>`;
   }
 
   const popupBox = document.querySelector("#assetItemPopup .asset-item-popup-box");
-  popupBox.classList.remove("storage-theme", "monitor-theme", "software-theme");
+  popupBox.classList.remove("storage-theme", "monitor-theme", "windows-theme", "software-theme");
   if(type === "storage"){
     popupBox.classList.add("storage-theme");
   } else if(type === "monitor"){
     popupBox.classList.add("monitor-theme");
+  } else if(type === "windows"){
+    popupBox.classList.add("windows-theme");
   } else {
     popupBox.classList.add("software-theme");
   }
@@ -1836,6 +1965,14 @@ function openComputerAssetPopup(uid, assetIndex){
   const softwareLines = Array.isArray(asset.software_items)
     ? asset.software_items.map(item => (item && item.name) || "").filter(Boolean)
     : [];
+  const windowsLines = formatCompositeItems(asset.windows_items, item => {
+    const os = String((item && item.window__os) || "").trim();
+    const serial = String((item && item.windows_serial) || "").trim();
+    if(!os && !serial){
+      return "";
+    }
+    return serial ? `${os || "Windows"} - ${serial}` : os;
+  });
 
   const ramRows = [];
   if(Number(asset.ram_total) > 0){
@@ -1879,7 +2016,7 @@ function openComputerAssetPopup(uid, assetIndex){
   body += renderMobilePopupCard("RAM", ramRows);
   body += renderMobilePopupListCard("Storage", storageLines, "No storage recorded");
   body += renderMobilePopupListCard("Monitor", monitorLines, "No monitor recorded");
-  body += renderMobilePopupCard("Windows", [["Operating System", asset.windows_key_text]]);
+  body += renderMobilePopupListCard("Windows", windowsLines, "No windows recorded");
   body += renderMobilePopupListCard("Software", softwareLines, "No software recorded");
 
   document.getElementById("computerAssetPopupBody").innerHTML = body;
@@ -2052,7 +2189,10 @@ function switchAsset(uid, assetIndex){
     row.querySelector('.cell-storage').dataset.searchText = a.storage_search || "";
     row.querySelector('.cell-monitor').innerHTML = renderAssetItemButtonsClient(a.monitor_items, "Monitor", "monitor", uid, assetIndex);
     row.querySelector('.cell-monitor').dataset.searchText = a.monitor_search || "";
-    row.querySelector('.cell-windows').innerHTML = a.windows_key;
+    row.querySelector('.cell-windows').innerHTML = isComputerAsset(a)
+      ? renderAssetItemButtonsClient(a.windows_items, "Windows", "windows", uid, assetIndex)
+      : a.windows_key;
+    row.querySelector('.cell-windows').dataset.searchText = a.windows_search || "";
     row.querySelector('.cell-software').innerHTML = renderAssetItemButtonsClient(a.software_items, "Software", "software", uid, assetIndex);
     row.querySelector('.cell-software').dataset.searchText = a.software_search || "";
 

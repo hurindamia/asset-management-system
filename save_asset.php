@@ -1,6 +1,7 @@
 <?php
 include "config/db.php";
 include "config/asset_form_helpers.php";
+include "config/windows_asset_helpers.php";
 
 /*
 |--------------------------------------------------------------------------
@@ -69,7 +70,8 @@ if(is_array($devices)){
             $macLan     = asset_escape($conn, $device['mac_lan'] ?? '');
             $macWifi    = asset_escape($conn, $device['mac_wifi'] ?? '');
             $antivirus  = asset_escape($conn, $device['antivirus'] ?? '');
-            $windowsKey = asset_escape($conn, asset_first_value($device, ['windows_key', 'windows']));
+            $windowsEntries = asset_windows_from_payload($device, ASSET_WINDOWS_MAX_ITEMS);
+            $windowsKey = asset_escape($conn, asset_get_primary_windows_os($windowsEntries));
 
             mysqli_query(
                 $conn,
@@ -99,6 +101,7 @@ if(is_array($devices)){
                 true
             );
             asset_insert_software_rows($conn, $assetId, $device['software'] ?? []);
+            asset_insert_windows_rows($conn, $assetId, $windowsEntries);
 
             continue;
         }

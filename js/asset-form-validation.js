@@ -37,8 +37,8 @@
         const deviceTitle = field.closest(".device-block")?.querySelector(".device-block-title");
         const sectionTitle = field.closest(".section")?.querySelector(".section-title");
         const itemTitle = field
-            .closest(".ram-item, .storage-item, .monitor-item, .software-item")
-            ?.querySelector(".ram-title, .storage-title, .monitor-title, .software-title");
+            .closest(".ram-item, .storage-item, .monitor-item, .software-item, .windows-item")
+            ?.querySelector(".ram-title, .storage-title, .monitor-title, .software-title, .windows-title");
 
         if(deviceTitle){
             parts.push(cleanText(deviceTitle.textContent));
@@ -224,4 +224,3 @@
         });
     });
 })();
-

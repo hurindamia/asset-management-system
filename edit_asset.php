@@ -1,6 +1,7 @@
 <?php
 include "config/db.php";
 include_once "components/asset_form_partials.php";
+include_once "config/windows_asset_helpers.php";
 
 /* ✅ SAFE ID */
 $id = $_GET['id'] ?? 0;
@@ -104,6 +105,16 @@ $monitor_serial = !empty($data['monitor_serial']) ? explode(",", $data['monitor_
 $software_arr = !empty($data['software'])
     ? array_filter(explode(",", $data['software']))
     : [""];
+
+$windows_map = asset_fetch_windows_map($conn, [(int)$id]);
+$windows_items = asset_get_windows_items_for_asset(
+    $windows_map,
+    (int)$id,
+    (string)($data['windows_key'] ?? '')
+);
+if(empty($windows_items)){
+    $windows_items = [['window__os' => '', 'windows_serial' => '']];
+}
 
 $return_to = trim((string)($_GET['return_to'] ?? ($_SERVER['HTTP_REFERER'] ?? '')));
 
@@ -323,13 +334,29 @@ for($i=0; $i<count($monitor_model); $i++){
 <!-- WINDOWS -->
 <div class="section">
 <div class="section-title">Windows</div>
-
+<div id="windowsContainer">
+<?php foreach($windows_items as $wi => $window): ?>
+<div class="windows-item">
+<div class="item-header">
+<div class="windows-title">Windows <?php echo $wi + 1; ?></div>
+<?php if($wi > 0): ?>
+<button type="button" class="remove-btn item-remove-btn" onclick="removeWindows(this)" title="Remove Windows">X</button>
+<?php endif; ?>
+</div>
 <div class="form-row">
 <label>Operating System</label>
-<select name="windows_key" required>
-<?php echo asset_form_render_windows_options($data['windows_key'] ?? ''); ?>
+<select name="window__os[]" onchange="toggleWindowsSerialField(this)" <?php echo $wi === 0 ? 'required' : ''; ?>>
+<?php echo asset_form_render_windows_options($window['window__os'] ?? ''); ?>
 </select>
 </div>
+<div class="form-row windows-serial-row" style="<?php echo trim((string)($window['window__os'] ?? '')) === '' ? 'display:none;' : ''; ?>">
+<label>Windows Serial / Key</label>
+<input type="text" name="windows_serial[]" value="<?php echo htmlspecialchars($window['windows_serial'] ?? ''); ?>" placeholder="Windows Serial / Product Key" <?php echo trim((string)($window['window__os'] ?? '')) === '' ? 'disabled' : 'required'; ?>>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+<button type="button" class="add-btn" onclick="addWindows()">+ Add Windows</button>
 </div>
 
 <!-- SOFTWARE -->
@@ -477,5 +504,13 @@ for($i=0; $i<count($monitor_model); $i++){
 </div>
 
 <?php echo asset_form_render_error_popup('editErrorPopup', 'editErrorList', 'Error: Missing Information!', 'Please review the following fields:'); ?>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    if(typeof initWindowsSection === "function"){
+        initWindowsSection();
+    }
+});
+</script>
 
 <?php include "components/footer.php"; ?>

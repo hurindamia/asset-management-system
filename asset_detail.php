@@ -1,4 +1,5 @@
 <?php include "config/db.php"; ?>
+<?php include_once "config/windows_asset_helpers.php"; ?>
 
 <link rel="stylesheet" href="css/style.css">
 <?php include "components/navbar.php"; ?>
@@ -209,6 +210,28 @@ foreach($software_arr as $s){
     if($s !== ''){
         $softwareItems[] = $s;
     }
+}
+
+$windows_map = asset_fetch_windows_map($conn, [(int)($data['ID'] ?? 0)]);
+$windows_rows = asset_get_windows_items_for_asset(
+    $windows_map,
+    (int)($data['ID'] ?? 0),
+    (string)($data['windows_key'] ?? '')
+);
+$windowsItems = [];
+foreach($windows_rows as $windowRow){
+    $windowOs = trim((string)($windowRow['window__os'] ?? ''));
+    $windowSerial = trim((string)($windowRow['windows_serial'] ?? ''));
+    if($windowOs === ''){
+        continue;
+    }
+
+    $line = $windowOs;
+    if($windowSerial !== ''){
+        $line .= ' - '.$windowSerial;
+    }
+
+    $windowsItems[] = $line;
 }
 
 $userRows = [
@@ -763,7 +786,7 @@ $accountRows = [
 <section class="detail-card windows-card">
     <div class="card-head"><span class="card-dot"></span>Windows</div>
     <div class="card-body">
-        <?php echo renderDetailGrid([['Operating System', $data['windows_key'] ?? '']], 1); ?>
+        <?php echo renderBulletList($windowsItems, 'No windows details recorded'); ?>
     </div>
 </section>
 
